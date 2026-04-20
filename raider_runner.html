@@ -2,16 +2,27 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>RAIDER RUNNER</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; }
 body {
     background: #0a0800;
     display: flex; align-items: center; justify-content: center;
-    min-height: 100vh; font-family: 'Courier New', monospace; overflow: hidden;
+    overflow: hidden; font-family: 'Courier New', monospace;
 }
 #wrap { position: relative; user-select: none; }
-canvas { display: block; }
+canvas {
+    display: block;
+    touch-action: none;
+    /* fit inside viewport in both portrait and landscape */
+    width: min(800px, 100vw, calc(100svh * 1.7778));
+    height: auto;
+    max-height: 100svh;
+}
 #crt {
     position: absolute; inset: 0;
     background: repeating-linear-gradient(to bottom,
@@ -40,6 +51,143 @@ addEventListener('keydown', e => {
     if (['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) e.preventDefault();
 });
 addEventListener('keyup', e => { keys[e.code] = false; });
+
+// ── Gamepad API ────────────────────────────────────────────────────────
+const gpPrev = {};
+function pollGamepad() {
+    const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+    const gp = gps[0];
+    if (!gp) return;
+    const b = i => gp.buttons[i]?.pressed ?? false;
+    const ax = gp.axes;
+    // Held movement keys
+    keys['ArrowLeft']  = b(14) || (ax[0]??0) < -0.3;
+    keys['ArrowRight'] = b(15) || (ax[0]??0) >  0.3;
+    keys['ArrowDown']  = b(13) || (ax[1]??0) >  0.5;
+    keys['Space']      = b(0)  || b(12);          // A or DPad-Up = jump
+    // Single-press actions
+    const shootNow  = b(5) || (gp.buttons[7]?.value??0) > 0.5;
+    const vatsNow   = b(3) || b(4);
+    const execNow   = b(9);
+    const enterNow  = b(1);
+    const navUpNow  = b(12);
+    const navDnNow  = b(13) || (ax[1]??0) > 0.5;
+    if (shootNow  && !gpPrev.shoot)   pressed['KeyZ']      = true;
+    if (vatsNow   && !gpPrev.vats)    pressed['KeyV']      = true;
+    if (execNow   && !gpPrev.exec)    pressed['Enter']     = true;
+    if (enterNow  && !gpPrev.enter)   pressed['KeyE']      = true;
+    if (navUpNow  && !gpPrev.navUp)   pressed['ArrowUp']   = true;
+    if (navDnNow  && !gpPrev.navDn)   pressed['ArrowDown'] = true;
+    gpPrev.shoot = shootNow; gpPrev.vats  = vatsNow;
+    gpPrev.exec  = execNow;  gpPrev.enter = enterNow;
+    gpPrev.navUp = navUpNow; gpPrev.navDn = navDnNow;
+}
+
+// ── Touch virtual controls ─────────────────────────────────────────────
+const TB = {
+    left:   { x: 48,  y: 382, r: 36, label: '◀',    key: 'ArrowLeft',  action: false },
+    right:  { x: 128, y: 382, r: 36, label: '▶',    key: 'ArrowRight', action: false },
+    crouch: { x: 88,  y: 432, r: 28, label: '▼',    key: 'ArrowDown',  action: false },
+    jump:   { x: 752, y: 368, r: 40, label: 'JUMP',  key: 'Space',     action: false },
+    shoot:  { x: 696, y: 422, r: 32, label: 'FIRE',  key: 'KeyZ',      action: true  },
+    vats:   { x: 644, y: 374, r: 28, label: 'VATS',  key: 'KeyV',      action: true  },
+};
+const TB_ENTER = { x: W/2, y: 355, r: 36, label: 'ENTER\nVAULT', key: 'KeyE', action: true };
+const activeTouches = new Map();
+function getHitBtn(cx, cy, vaultInteractive) {
+    const all = [...Object.values(TB), ...(vaultInteractive ? [TB_ENTER] : [])];
+    for (const btn of all) {
+        const dx = cx-btn.x, dy = cy-btn.y;
+        if (dx*dx+dy*dy <= btn.r*btn.r) return btn;
+    }
+    return null;
+}
+function touchCoords(t) {
+    const r = canvas.getBoundingClientRect();
+    return { x: (t.clientX-r.left)*W/r.width, y: (t.clientY-r.top)*H/r.height };
+}
+canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const curState = typeof state !== 'undefined' ? state : 'title';
+    // Title / dead — any tap starts or restarts
+    if (curState === 'title' || curState === 'dead') {
+        pressed['Space'] = true;
+        return;
+    }
+    // Vault — tap items or exit door
+    if (curState === 'vault') {
+        for (const t of e.changedTouches) {
+            const {x,y} = touchCoords(t);
+            const px=148, py=86, pw=W-px-12;
+            for (let i=0; i<SHOP_ITEMS.length; i++) {
+                const iy = py+30+i*56;
+                if (x>=px+6 && x<=px+pw-6 && y>=iy-4 && y<=iy+50) { buyShopItem(i); break; }
+            }
+            // Exit door area
+            if (x>=8 && x<=70 && y>=GROUND-96 && y<=GROUND+4) pressed['Escape'] = true;
+        }
+        return;
+    }
+    // Playing — virtual buttons
+    const vi = typeof vaultDoors!=='undefined' && vaultDoors.some(v=>v.interactive);
+    for (const t of e.changedTouches) {
+        const {x,y} = touchCoords(t);
+        const btn = getHitBtn(x, y, vi);
+        if (btn) {
+            activeTouches.set(t.identifier, btn.key);
+            keys[btn.key] = true;
+            if (btn.action) pressed[btn.key] = true;
+        }
+    }
+}, { passive: false });
+canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+        const k = activeTouches.get(t.identifier);
+        if (k) { keys[k] = false; activeTouches.delete(t.identifier); }
+    }
+}, { passive: false });
+canvas.addEventListener('touchcancel', e => {
+    for (const t of e.changedTouches) {
+        const k = activeTouches.get(t.identifier);
+        if (k) { keys[k] = false; activeTouches.delete(t.identifier); }
+    }
+});
+const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+function drawTouchControls(ctx, vaultInteractive) {
+    if (!isTouchDevice()) return;
+    ctx.save();
+    const activeKeys = new Set(activeTouches.values());
+    const drawBtn = (btn, accent) => {
+        const on = activeKeys.has(btn.key);
+        const col = accent || '#00ff44';
+        ctx.globalAlpha = on ? 0.95 : 0.55;
+        // Shadow glow when active
+        if (on) { ctx.shadowColor = col; ctx.shadowBlur = 14; }
+        ctx.beginPath(); ctx.arc(btn.x, btn.y, btn.r, 0, Math.PI*2);
+        ctx.fillStyle = on ? `rgba(0,60,20,0.7)` : 'rgba(0,0,0,0.6)';
+        ctx.fill();
+        ctx.strokeStyle = on ? col : 'rgba(0,255,80,0.4)';
+        ctx.lineWidth = on ? 2.5 : 1.5;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = on ? col : 'rgba(0,255,80,0.75)';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const lines = btn.label.split('\n');
+        const fs = Math.round(btn.r * (lines.length > 1 ? 0.38 : 0.48));
+        ctx.font = `bold ${fs}px Courier New`;
+        lines.forEach((l,i) => ctx.fillText(l, btn.x, btn.y + (i-(lines.length-1)/2) * (fs+3)));
+    };
+    // Movement buttons (left side) — blue tint
+    drawBtn(TB.left);  drawBtn(TB.right); drawBtn(TB.crouch);
+    // Action buttons (right side) — colour-coded
+    drawBtn(TB.jump,   '#44aaff');   // blue = jump
+    drawBtn(TB.shoot,  '#ff6622');   // orange = fire
+    drawBtn(TB.vats,   '#ffcc00');   // yellow = VATS
+    if (vaultInteractive) drawBtn(TB_ENTER, '#00ff88');
+    ctx.globalAlpha = 1;
+    ctx.restore();
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────
 const rand  = (a,b) => Math.random()*(b-a)+a;
@@ -499,7 +647,7 @@ function drawVaultDoor(ctx,x,y,interactive,t){
         ctx.fillStyle='rgba(0,0,0,0.7)';
         roundRect(ctx,x-10,y-34,w+20,22,4);ctx.fill();
         ctx.fillStyle='#3f3';ctx.font='bold 11px Courier New';
-        ctx.fillText('[↑] ENTER VAULT',x+w/2,y-23);
+        ctx.fillText('[↑/SPACE] ENTER VAULT',x+w/2,y-23);
     }
     ctx.textAlign='left';ctx.textBaseline='alphabetic';
 }
@@ -513,57 +661,86 @@ const ALLY_DIALOGUES = [
     ["Got 200 caps?", "No? Then don't ask."],
 ];
 function drawVaultInterior(ctx,frame){
-    // Room
+    // Room background
     const g=ctx.createLinearGradient(0,0,0,H);
     g.addColorStop(0,'#0a1a0a');g.addColorStop(1,'#051005');
     ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-    // Floor
     ctx.fillStyle='#1a2a1a';ctx.fillRect(0,GROUND,W,H-GROUND);
     ctx.strokeStyle='#223322';ctx.lineWidth=1;
-    for(let x=0;x<W;x+=40)ctx.strokeRect(x,GROUND,40,H-GROUND);
-    // Ceiling
+    for(let x2=0;x2<W;x2+=40)ctx.strokeRect(x2,GROUND,40,H-GROUND);
     ctx.fillStyle='#0a180a';ctx.fillRect(0,0,W,60);
-    // Walls
     ctx.fillStyle='#1a2a1a';ctx.fillRect(0,60,20,GROUND-60);ctx.fillRect(W-20,60,20,GROUND-60);
-    // Wall panels
     ctx.strokeStyle='#2a4a2a';ctx.lineWidth=2;
     for(let y=80;y<GROUND;y+=60)ctx.strokeRect(30,y,W-60,50);
-    // Green strip lighting
     ctx.fillStyle='rgba(0,255,80,0.08)';ctx.fillRect(0,60,W,10);ctx.fillRect(0,GROUND-10,W,10);
-    // Terminal screens
-    for(const[tx,ty]of[[60,100],[W-130,100]]){
-        ctx.fillStyle='#0a200a';ctx.fillRect(tx,ty,80,60);
-        ctx.strokeStyle='#2a4a2a';ctx.strokeRect(tx,ty,80,60);
-        const blink=Math.floor(frame/30)%2;
-        ctx.fillStyle='#00cc44';ctx.font='8px Courier New';
-        ctx.textBaseline='top';ctx.textAlign='left';
-        ['THREAT LVL: 9','RAD: 847','WATER: OK','POWER: 98%',''].forEach((l,i)=>{
-            if(i===4&&blink)ctx.fillText('█',tx+6,ty+8+i*10);
-            else ctx.fillText(l,tx+6,ty+8+i*10);
-        });
-    }
-    // Vault number sign
-    ctx.fillStyle='#ffcc00';ctx.font='bold 28px Courier New';
+
+    // Header
+    ctx.fillStyle='#ffcc00';ctx.font='bold 20px Courier New';
     ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('VAULT 101',W/2,40);
-    ctx.fillStyle='#3f3';ctx.font='12px Courier New';
-    ctx.fillText('RECLAMATION DAY — NEVER',W/2,H-10);
+    ctx.fillText('VAULT 101  —  TRADE POST',W/2,36);
+    ctx.fillStyle='rgba(0,255,80,0.12)';ctx.fillRect(0,54,W,3);
+
+    // Caps display
+    ctx.fillStyle='#00ff88';ctx.font='bold 16px Courier New';
+    ctx.fillText(`¢  YOUR CAPS:  ${caps}`,W/2,68);
+
+    // Vendor ally (left side)
+    drawAlly(ctx,72,GROUND,'doctor',frame,ALLY_DIALOGUES[1]);
+
+    // Shop panel
+    const px=148,py=86,pw=W-px-12,ph=GROUND-py-26;
+    ctx.fillStyle='rgba(0,0,0,0.72)';roundRect(ctx,px,py,pw,ph,8);ctx.fill();
+    ctx.strokeStyle='#3f3';ctx.lineWidth=1.5;roundRect(ctx,px,py,pw,ph,8);ctx.stroke();
+    ctx.fillStyle='#3f3';ctx.font='bold 10px Courier New';
+    ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('ITEMS FOR SALE',px+14,py+9);
+    ctx.strokeStyle='#2a4a2a';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px+10,py+24);ctx.lineTo(px+pw-10,py+24);ctx.stroke();
+
+    SHOP_ITEMS.forEach((item,i)=>{
+        const iy=py+30+i*56;
+        const sel=(vaultSelected===i);
+        const afford=caps>=item.cost;
+        if(sel){
+            ctx.fillStyle='rgba(0,255,80,0.13)';
+            roundRect(ctx,px+6,iy-2,pw-12,50,4);ctx.fill();
+            ctx.strokeStyle='#00ff44';ctx.lineWidth=1.5;
+            roundRect(ctx,px+6,iy-2,pw-12,50,4);ctx.stroke();
+        }
+        ctx.fillStyle=sel?'#00ff44':afford?'#ffcc00':'#555';
+        ctx.font=`bold 13px Courier New`;ctx.textAlign='left';ctx.textBaseline='top';
+        ctx.fillText(`[${i+1}]  ${item.label}`,px+16,iy+4);
+        ctx.fillStyle=afford?'#7a9':' #444';ctx.font='10px Courier New';
+        ctx.fillText(item.desc,px+16,iy+22);
+        ctx.textAlign='right';
+        ctx.fillStyle=afford?'#00ff88':'#772222';
+        ctx.font='bold 14px Courier New';
+        ctx.fillText(`${item.cost} ¢`,px+pw-14,iy+4);
+        ctx.textAlign='left';
+    });
+
+    // Purchase message
+    if(vaultMsgTimer>0){
+        const a=Math.min(1,vaultMsgTimer/20);
+        ctx.globalAlpha=a;
+        ctx.fillStyle=vaultMsg.includes('INSUF')?'#ff4444':'#00ff88';
+        ctx.font='bold 13px Courier New';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(vaultMsg,W/2,GROUND-18);
+        ctx.globalAlpha=1;
+    }
+
     // Exit door (left)
     ctx.fillStyle='#384858';ctx.fillRect(10,GROUND-90,55,90);
     ctx.strokeStyle='#607080';ctx.lineWidth=2;ctx.strokeRect(10,GROUND-90,55,90);
-    ctx.beginPath();ctx.ellipse(58,GROUND-45,6,6,0,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle='#3f3';ctx.font='bold 10px Courier New';
-    ctx.textAlign='center';ctx.fillText('[ESC] EXIT',37,GROUND-95);
-    // Draw 3 allies
-    const d1=ALLY_DIALOGUES[0],d2=ALLY_DIALOGUES[Math.floor(frame/180)%ALLY_DIALOGUES.length];
-    const d3=ALLY_DIALOGUES[2];
-    drawAlly(ctx,230,GROUND,'guard',frame,d1);
-    drawAlly(ctx,420,GROUND,'doctor',frame,d2);
-    drawAlly(ctx,600,GROUND,'dweller',frame,d3);
-    // Instructions
-    ctx.fillStyle='rgba(0,255,80,0.6)';ctx.font='11px Courier New';
+    ctx.beginPath();ctx.arc(58,GROUND-45,6,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#3f3';ctx.font='bold 9px Courier New';
     ctx.textAlign='center';ctx.textBaseline='bottom';
-    ctx.fillText('SAFE ZONE — PRESS  ESC  TO RETURN TO WASTELAND',W/2,H-6);
+    ctx.fillText('[ESC] EXIT',37,GROUND-94);
+
+    // Controls hint
+    ctx.fillStyle='rgba(0,255,80,0.45)';ctx.font='10px Courier New';
+    ctx.textBaseline='bottom';
+    ctx.fillText('[1-4] BUY  ·  [↑↓ / D-PAD] SELECT  ·  [ENTER / A] CONFIRM  ·  [ESC / B] RETURN',W/2,H-4);
     ctx.textAlign='left';ctx.textBaseline='alphabetic';
 }
 function drawAlly(ctx,cx,fy,role,frame,dialogue){
@@ -737,7 +914,7 @@ class Player{
             this.runTimer++;if(this.runTimer%7===0)this.runFrame=(this.runFrame+1)%4;
         }else if(this.onGround){this.runFrame=0;this.runTimer=0;}
         if(this.shootCD>0)this.shootCD--;
-        const wantShoot=keys['KeyZ']||keys['KeyX']||keys['ControlLeft']||keys['ControlRight'];
+        const wantShoot=pressed['KeyZ']||pressed['KeyX']||pressed['ControlLeft']||pressed['ControlRight'];
         if(wantShoot&&this.shootCD===0){
             const bx=this.facing===1?this.x+this.w+8:this.x-18;
             const by=this.y+(crouching?this.h*0.62:this.h*0.56);
@@ -862,6 +1039,31 @@ class Raider{
 // ── Collision ──────────────────────────────────────────────────────────
 function overlap(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
 
+// ── Caps drop helper ───────────────────────────────────────────────────
+function capsDrop(e){
+    if(e.type==='radroach')return rInt(5,12);
+    if(e.type==='mallrat') return rInt(15,25);
+    return rInt(25,40); // raider
+}
+
+// ── Shop ───────────────────────────────────────────────────────────────
+const SHOP_ITEMS = [
+    { label:'STIMPAK',    desc:'+50 HP',              cost:30, action:()=>{ player.hp=Math.min(player.maxHp,player.hp+50); } },
+    { label:'NUKA-COLA',  desc:'FULL HEALTH RESTORE', cost:80, action:()=>{ player.hp=player.maxHp; } },
+    { label:'SILENCER',   desc:'10s GUN SUPPRESSOR',  cost:25, action:()=>{ silencerTicks=600; } },
+    { label:'VATS BOOST', desc:'RECHARGE ALL AP',     cost:50, action:()=>{ vats.ap=VATS_MAX_AP; vats.cooldown=0; } },
+];
+function buyShopItem(i){
+    const item=SHOP_ITEMS[i];
+    if(!item)return;
+    if(caps>=item.cost){
+        caps-=item.cost; item.action();
+        vaultMsg='BOUGHT: '+item.label+'!'; vaultMsgTimer=120; sfxPickup();
+    } else {
+        vaultMsg='INSUFFICIENT CAPS'; vaultMsgTimer=80;
+    }
+}
+
 // ── V.A.T.S ────────────────────────────────────────────────────────────
 const VATS_MAX_AP = 6;
 let vats = {active:false,ap:VATS_MAX_AP,cooldown:0,queue:[],executing:false,execTimer:0};
@@ -931,7 +1133,7 @@ function drawVATSOverlay(ctx,enemies,vatsRef,frame){
 }
 
 // ── HUD ────────────────────────────────────────────────────────────────
-function drawHUD(ctx,player,score,highScore,diffTick,vatsRef,silTicks,frame){
+function drawHUD(ctx,player,score,highScore,diffTick,vatsRef,silTicks,frame,capsAmt){
     ctx.fillStyle='rgba(0,0,0,0.72)';ctx.fillRect(0,0,W,42);
     ctx.strokeStyle='#3f3';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,42);ctx.lineTo(W,42);ctx.stroke();
@@ -971,11 +1173,16 @@ function drawHUD(ctx,player,score,highScore,diffTick,vatsRef,silTicks,frame){
     ctx.fillStyle='rgba(0,0,0,0.65)';ctx.fillRect(0,H-34,W,34);
     ctx.strokeStyle='#3f3';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(0,H-34);ctx.lineTo(W,H-34);ctx.stroke();
-    ctx.fillStyle='#3f3';ctx.font='11px Courier New';
-    ctx.textAlign='left';ctx.textBaseline='middle';
-    ctx.fillText('← → MOVE',10,H-17);ctx.fillText('↑ JUMP',95,H-17);
-    ctx.fillText('↓ CROUCH',155,H-17);ctx.fillText('Z/CTRL SHOOT',245,H-17);
-    ctx.fillText('[V] VATS',360,H-17);
+    ctx.fillStyle='#ffcc00';ctx.font='bold 12px Courier New';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(`¢ ${capsAmt??0}`,W/2,H-17);
+    if(!isTouchDevice()){
+        ctx.fillStyle='#3f3';ctx.font='11px Courier New';
+        ctx.textAlign='left';
+        ctx.fillText('← → MOVE',10,H-17);ctx.fillText('↑ JUMP',95,H-17);
+        ctx.fillText('↓ CROUCH',155,H-17);ctx.fillText('Z/CTRL SHOOT',245,H-17);
+        ctx.fillText('[V] VATS',360,H-17);
+    }
     const phases=['⚡ EASY','⚡ THREAT','⚠ DANGER','☢ LETHAL'];
     const pi=Math.min(3,Math.floor(diffTick/1800));
     ctx.textAlign='right';ctx.fillStyle=pi>1?'#ff4400':'#ffaa00';
@@ -1003,7 +1210,7 @@ function drawTitle(ctx){
     ctx.fillText('ENEMIES:   RAD ROACHES   ·   MALL RATS   ·   RAIDERS',W/2,H/2+94);
     if(Math.floor(Date.now()/520)%2===0){
         ctx.fillStyle='#33ff33';ctx.font='bold 17px Courier New';
-        ctx.fillText('[ PRESS SPACE TO START ]',W/2,H/2+130);
+        ctx.fillText(isTouchDevice()?'[ TAP ANYWHERE TO START ]':'[ PRESS SPACE TO START ]',W/2,H/2+130);
     }
     ctx.fillStyle='#333';ctx.font='10px Courier New';
     ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText('v0.2 PROTOTYPE',W-8,H-4);
@@ -1033,6 +1240,7 @@ let spawnTimer=0,diffTick=0,gameFrame=0;
 let vaultSpawnCD=0;
 let pickupSpawnCD=rInt(600,1200);
 let worldSpeedMult=1.0; // slows down when vault approaches
+let caps=0,vaultMsg='',vaultMsgTimer=0,vaultSelected=0;
 
 function initGame(){
     player=new Player();
@@ -1040,6 +1248,7 @@ function initGame(){
     scroll=0;score=0;spawnTimer=0;diffTick=0;gameFrame=0;
     vaultSpawnCD=1800;pickupSpawnCD=rInt(600,1200);
     silencerTicks=0;worldSpeedMult=1.0;
+    caps=0;vaultMsg='';vaultMsgTimer=0;vaultSelected=0;
     vats={active:false,ap:VATS_MAX_AP,cooldown:0,queue:[],executing:false,execTimer:0};
 }
 
@@ -1061,6 +1270,7 @@ function spawnEnemy(){
 
 // ── Main loop ──────────────────────────────────────────────────────────
 function update(){
+    pollGamepad();
     gameFrame++;
     if(state==='title'){
         if(pressed['Space']||pressed['Enter']){state='playing';initGame();}
@@ -1071,7 +1281,12 @@ function update(){
         for(const k in pressed)delete pressed[k];return;
     }
     if(state==='vault'){
-        if(pressed['Escape']||pressed['KeyE']){state='playing';}
+        if(vaultMsgTimer>0)vaultMsgTimer--;
+        if(pressed['ArrowUp']||pressed['KeyW'])  vaultSelected=(vaultSelected-1+SHOP_ITEMS.length)%SHOP_ITEMS.length;
+        if(pressed['ArrowDown']||pressed['KeyS']) vaultSelected=(vaultSelected+1)%SHOP_ITEMS.length;
+        for(let i=0;i<SHOP_ITEMS.length;i++) if(pressed[`Digit${i+1}`]) buyShopItem(i);
+        if(pressed['Enter']||pressed['Space']) buyShopItem(vaultSelected);
+        if(pressed['Escape']||pressed['KeyE']||pressed['KeyB']){state='playing';}
         for(const k in pressed)delete pressed[k];return;
     }
 
@@ -1153,7 +1368,7 @@ function update(){
                 if(target&&!target.dead&&!target.squished){
                     sfxShoot();
                     target.takeDamage(50,particles);
-                    if(target.dead)score+=target.score;
+                    if(target.dead){score+=target.score;caps+=capsDrop(target);}
                     addShake(4);
                     // Bullet trail effect
                     bullets.push(new Bullet(player.cx+(player.facing===1?20:-20),player.cy-10,player.facing===1?15:-15,'player'));
@@ -1196,7 +1411,7 @@ function update(){
                 const vertHit=player.feetY>=e.topY&&player.feetY<=e.topY+e.h+4;
                 if(horizOverlap&&vertHit){
                     e.squish(particles);
-                    score+=e.score;
+                    score+=e.score;caps+=capsDrop(e);
                     player.vy=-9; // bounce
                     addShake(4);
                 }
@@ -1213,7 +1428,7 @@ function update(){
                 if(!e.dead&&!e.squished&&overlap(b.rect,e.rect)){
                     b.dead=true;
                     e.takeDamage(25,particles);
-                    if(e.dead)score+=e.score;
+                    if(e.dead){score+=e.score;caps+=capsDrop(e);}
                     for(let i=0;i<6;i++)particles.push(new Particle(b.x,b.y,rand(-4,4),rand(-4,0),'#ffcc00',rInt(10,20),3));
                     break;
                 }
@@ -1245,8 +1460,8 @@ function update(){
 
     // ── Vault entry ───────────────────────────────────────────────────
     for(const v of vaultDoors){
-        if(v.interactive&&(pressed['ArrowUp']||pressed['KeyW']||pressed['KeyE'])){
-            state='vault';v.dead=true;break;
+        if(v.interactive&&(pressed['ArrowUp']||pressed['KeyW']||pressed['KeyE']||pressed['Space']||pressed['Enter'])){
+            player.hp=player.maxHp;state='vault';v.dead=true;break;
         }
     }
 
@@ -1272,6 +1487,17 @@ function draw(){
 
     if(state==='vault'){
         drawVaultInterior(ctx,gameFrame);
+        // Mobile: show a large EXIT tap target
+        if(isTouchDevice()){
+            ctx.save();
+            ctx.globalAlpha=0.7;
+            ctx.fillStyle='rgba(0,0,0,0.6)';ctx.strokeStyle='#3f3';ctx.lineWidth=1.5;
+            roundRect(ctx,8,GROUND-96,60,96,4);ctx.fill();ctx.stroke();
+            ctx.fillStyle='#3f3';ctx.font='bold 10px Courier New';
+            ctx.textAlign='center';ctx.textBaseline='middle';
+            ctx.fillText('TAP',38,GROUND-54);ctx.fillText('EXIT',38,GROUND-38);
+            ctx.globalAlpha=1;ctx.restore();
+        }
         ctx.restore();return;
     }
 
@@ -1316,10 +1542,13 @@ function draw(){
         // VATS overlay (on top of scene, before HUD)
         if(vats.active)drawVATSOverlay(ctx,enemies,vats,gameFrame);
         // HUD
-        drawHUD(ctx,player,score,highScore,diffTick,vats,silencerTicks,gameFrame);
+        drawHUD(ctx,player,score,highScore,diffTick,vats,silencerTicks,gameFrame,caps);
         if(state==='dead')drawDead(ctx,score,highScore,score>=highScore);
+        const vi = vaultDoors.some(v=>v.interactive);
+        drawTouchControls(ctx, vi);
     }else{
         drawTitle(ctx);
+        drawTouchControls(ctx, false);
     }
 
     ctx.restore();
