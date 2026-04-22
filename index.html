@@ -18,10 +18,11 @@ body {
 canvas {
     display: block;
     touch-action: none;
-    /* fit inside viewport in both portrait and landscape */
-    width: min(800px, 100vw, calc(100svh * 1.7778));
+    /* fill viewport while keeping 16:9 — no hard desktop cap */
+    width: min(100vw, calc(100svh * 1.7778));
     height: auto;
     max-height: 100svh;
+    image-rendering: pixelated;
 }
 #crt {
     position: absolute; inset: 0;
@@ -29,12 +30,35 @@ canvas {
         transparent 0px, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px);
     pointer-events: none;
 }
+#rotate-hint {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(10,8,0,0.95);
+    color: #00ff44;
+    flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    z-index: 99;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+}
+#rotate-hint .rh-icon { font-size: 3.5rem; line-height: 1; }
+#rotate-hint .rh-text { font-size: 0.9rem; line-height: 1.9; text-transform: uppercase; }
+@media (max-width: 600px) and (orientation: portrait) {
+    #rotate-hint { display: flex; }
+}
 </style>
 </head>
 <body>
 <div id="wrap">
 <canvas id="c" width="800" height="450"></canvas>
 <div id="crt"></div>
+</div>
+<div id="rotate-hint">
+    <div class="rh-icon">&#x21BA;</div>
+    <div class="rh-text">Rotate device<br>for best experience</div>
 </div>
 <script>
 'use strict';
@@ -90,12 +114,12 @@ function pollGamepad() {
 
 // ── Touch virtual controls ─────────────────────────────────────────────
 const TB = {
-    left:   { x: 48,  y: 382, r: 36, label: '◀',    key: 'ArrowLeft',  action: false },
-    right:  { x: 128, y: 382, r: 36, label: '▶',    key: 'ArrowRight', action: false },
-    crouch: { x: 88,  y: 432, r: 28, label: '▼',    key: 'ArrowDown',  action: false },
-    jump:   { x: 752, y: 368, r: 40, label: 'JUMP',  key: 'Space',     action: false },
-    shoot:  { x: 696, y: 422, r: 32, label: 'FIRE',  key: 'KeyZ',      action: true  },
-    vats:   { x: 644, y: 374, r: 28, label: 'VATS',  key: 'KeyV',      action: true  },
+    left:   { x: 52,  y: 378, r: 38, label: '◀',    key: 'ArrowLeft',  action: false },
+    right:  { x: 136, y: 378, r: 38, label: '▶',    key: 'ArrowRight', action: false },
+    crouch: { x: 94,  y: 424, r: 30, label: '▼',    key: 'ArrowDown',  action: false },
+    jump:   { x: 750, y: 365, r: 42, label: 'JUMP',  key: 'Space',     action: false },
+    shoot:  { x: 692, y: 418, r: 34, label: 'FIRE',  key: 'KeyZ',      action: true  },
+    vats:   { x: 638, y: 370, r: 30, label: 'VATS',  key: 'KeyV',      action: true  },
 };
 const TB_ENTER = { x: W/2, y: 355, r: 36, label: 'ENTER\nVAULT', key: 'KeyE', action: true };
 const activeTouches = new Map();
