@@ -42,6 +42,8 @@ const canvas = document.getElementById('c');
 const ctx    = canvas.getContext('2d');
 const W = 800, H = 450, GROUND = 370;
 const GRAVITY = 0.58;
+const VAULT_ITEM_H = 52;
+const VAULT_ITEMS_VISIBLE = 4;
 
 // ── Input ──────────────────────────────────────────────────────────────
 const keys = {}, pressed = {};
@@ -66,21 +68,24 @@ function pollGamepad() {
     keys['ArrowDown']  = b(13) || (ax[1]??0) >  0.5;
     keys['Space']      = b(0)  || b(12);          // A or DPad-Up = jump
     // Single-press actions
-    const shootNow  = b(5) || (gp.buttons[7]?.value??0) > 0.5;
-    const vatsNow   = b(3) || b(4);
-    const execNow   = b(9);
-    const enterNow  = b(1);
-    const navUpNow  = b(12);
-    const navDnNow  = b(13) || (ax[1]??0) > 0.5;
-    if (shootNow  && !gpPrev.shoot)   pressed['KeyZ']      = true;
-    if (vatsNow   && !gpPrev.vats)    pressed['KeyV']      = true;
-    if (execNow   && !gpPrev.exec)    pressed['Enter']     = true;
-    if (enterNow  && !gpPrev.enter)   pressed['KeyE']      = true;
-    if (navUpNow  && !gpPrev.navUp)   pressed['ArrowUp']   = true;
-    if (navDnNow  && !gpPrev.navDn)   pressed['ArrowDown'] = true;
-    gpPrev.shoot = shootNow; gpPrev.vats  = vatsNow;
-    gpPrev.exec  = execNow;  gpPrev.enter = enterNow;
-    gpPrev.navUp = navUpNow; gpPrev.navDn = navDnNow;
+    const shootNow   = b(5) || (gp.buttons[7]?.value??0) > 0.5;
+    const vatsNow    = b(3);
+    const cycleWpnNow= b(4);
+    const execNow    = b(9);
+    const enterNow   = b(1);
+    const navUpNow   = b(12);
+    const navDnNow   = b(13) || (ax[1]??0) > 0.5;
+    if (shootNow    && !gpPrev.shoot)    pressed['KeyZ']      = true;
+    if (vatsNow     && !gpPrev.vats)     pressed['KeyV']      = true;
+    if (cycleWpnNow && !gpPrev.cycleWpn) pressed['KeyQ']      = true;
+    if (execNow     && !gpPrev.exec)     pressed['Enter']     = true;
+    if (enterNow    && !gpPrev.enter)    pressed['KeyE']      = true;
+    if (navUpNow    && !gpPrev.navUp)    pressed['ArrowUp']   = true;
+    if (navDnNow    && !gpPrev.navDn)    pressed['ArrowDown'] = true;
+    gpPrev.shoot    = shootNow;  gpPrev.vats     = vatsNow;
+    gpPrev.cycleWpn = cycleWpnNow;
+    gpPrev.exec     = execNow;   gpPrev.enter    = enterNow;
+    gpPrev.navUp    = navUpNow;  gpPrev.navDn    = navDnNow;
 }
 
 // ── Touch virtual controls ─────────────────────────────────────────────
@@ -119,9 +124,11 @@ canvas.addEventListener('touchstart', e => {
         for (const t of e.changedTouches) {
             const {x,y} = touchCoords(t);
             const px=148, py=86, pw=W-px-12;
-            for (let i=0; i<SHOP_ITEMS.length; i++) {
-                const iy = py+30+i*56;
-                if (x>=px+6 && x<=px+pw-6 && y>=iy-4 && y<=iy+50) { buyShopItem(i); break; }
+            for (let vi=0; vi<VAULT_ITEMS_VISIBLE; vi++) {
+                const i = (typeof vaultScrollOffset!=='undefined'?vaultScrollOffset:0) + vi;
+                if(i>=SHOP_ITEMS.length)break;
+                const iy = py+40+vi*VAULT_ITEM_H;
+                if (x>=px+6 && x<=px+pw-6 && y>=iy-2 && y<=iy+VAULT_ITEM_H-2) { buyShopItem(i); break; }
             }
             // Exit door area
             if (x>=8 && x<=70 && y>=GROUND-96 && y<=GROUND+4) pressed['Escape'] = true;
@@ -357,26 +364,28 @@ class Particle{
 
 // ── Bullet ─────────────────────────────────────────────────────────────
 class Bullet{
-    constructor(x,y,vx,owner){
-        this.x=x;this.y=y;this.vx=vx;
-        this.owner=owner;this.dead=false;
+    constructor(x,y,vx,owner,color,vy){
+        this.x=x;this.y=y;this.vx=vx;this.vy=vy??0;
+        this.owner=owner;this.dead=false;this.color=color??null;
         this.w=10;this.h=3;this.trail=[];
     }
     update(){
         this.trail.push({x:this.x,y:this.y});
         if(this.trail.length>6)this.trail.shift();
-        this.x+=this.vx;
-        if(this.x<-30||this.x>W+30)this.dead=true;
+        this.x+=this.vx;this.y+=this.vy;
+        if(this.x<-30||this.x>W+30||this.y<0||this.y>H+20)this.dead=true;
     }
     draw(ctx){
+        const col=this.color||(this.owner==='player'?'#ffcc00':'#ff4400');
+        const col2=this.color||(this.owner==='player'?'#ffe060':'#ff6600');
         for(let i=0;i<this.trail.length;i++){
             const t=i/this.trail.length;
             ctx.globalAlpha=t*0.35;
-            ctx.fillStyle=this.owner==='player'?'#ffcc00':'#ff4400';
+            ctx.fillStyle=col;
             ctx.fillRect(this.trail[i].x,this.trail[i].y,this.w*t,this.h);
         }
         ctx.globalAlpha=1;
-        ctx.fillStyle=this.owner==='player'?'#ffe060':'#ff6600';
+        ctx.fillStyle=col2;
         ctx.fillRect(this.x,this.y-1,this.w,this.h+2);
         ctx.fillStyle='#ffffffcc';ctx.fillRect(this.x+2,this.y,this.w-4,1);
     }
@@ -697,27 +706,40 @@ function drawVaultInterior(ctx,frame){
     ctx.strokeStyle='#2a4a2a';ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(px+10,py+24);ctx.lineTo(px+pw-10,py+24);ctx.stroke();
 
-    SHOP_ITEMS.forEach((item,i)=>{
-        const iy=py+30+i*56;
+    // Scroll indicators
+    if(vaultScrollOffset>0){ctx.fillStyle='#00ff88';ctx.font='bold 10px Courier New';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('▲  SCROLL UP  ▲',px+pw/2,py+28);}
+    for(let vi=0;vi<VAULT_ITEMS_VISIBLE;vi++){
+        const i=vaultScrollOffset+vi;
+        if(i>=SHOP_ITEMS.length)break;
+        const item=SHOP_ITEMS[i];
+        const iy=py+40+vi*VAULT_ITEM_H;
         const sel=(vaultSelected===i);
         const afford=caps>=item.cost;
+        const isEquipped=item.weaponIdx!==undefined&&currentWeaponIdx===item.weaponIdx;
+        const isOwned=item.oneTime&&pickle3000;
+        const unavail=isEquipped||isOwned;
         if(sel){
             ctx.fillStyle='rgba(0,255,80,0.13)';
-            roundRect(ctx,px+6,iy-2,pw-12,50,4);ctx.fill();
+            roundRect(ctx,px+6,iy-2,pw-12,48,4);ctx.fill();
             ctx.strokeStyle='#00ff44';ctx.lineWidth=1.5;
-            roundRect(ctx,px+6,iy-2,pw-12,50,4);ctx.stroke();
+            roundRect(ctx,px+6,iy-2,pw-12,48,4);ctx.stroke();
         }
-        ctx.fillStyle=sel?'#00ff44':afford?'#ffcc00':'#555';
-        ctx.font=`bold 13px Courier New`;ctx.textAlign='left';ctx.textBaseline='top';
-        ctx.fillText(`[${i+1}]  ${item.label}`,px+16,iy+4);
-        ctx.fillStyle=afford?'#7a9':' #444';ctx.font='10px Courier New';
-        ctx.fillText(item.desc,px+16,iy+22);
+        ctx.fillStyle=unavail?'#3a6a3a':sel?'#00ff44':afford?'#ffcc00':'#555';
+        ctx.font='bold 12px Courier New';ctx.textAlign='left';ctx.textBaseline='top';
+        ctx.fillText(`[${i+1}] ${item.label}`,px+14,iy+3);
+        ctx.fillStyle=unavail?'#2a4a2a':afford?'#7a9':'#444';ctx.font='9px Courier New';
+        ctx.fillText(item.desc,px+14,iy+20);
         ctx.textAlign='right';
-        ctx.fillStyle=afford?'#00ff88':'#772222';
-        ctx.font='bold 14px Courier New';
-        ctx.fillText(`${item.cost} ¢`,px+pw-14,iy+4);
+        if(unavail){
+            ctx.fillStyle='#00ff44';ctx.font='bold 10px Courier New';
+            ctx.fillText(isEquipped?'EQUIPPED':'OWNED',px+pw-12,iy+3);
+        }else{
+            ctx.fillStyle=afford?'#00ff88':'#772222';ctx.font='bold 13px Courier New';
+            ctx.fillText(`${item.cost} \xa2`,px+pw-12,iy+3);
+        }
         ctx.textAlign='left';
-    });
+    }
+    if(vaultScrollOffset+VAULT_ITEMS_VISIBLE<SHOP_ITEMS.length){ctx.fillStyle='#00ff88';ctx.font='bold 10px Courier New';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('▼  SCROLL DOWN  ▼',px+pw/2,py+ph-4);}
 
     // Purchase message
     if(vaultMsgTimer>0){
@@ -740,7 +762,7 @@ function drawVaultInterior(ctx,frame){
     // Controls hint
     ctx.fillStyle='rgba(0,255,80,0.45)';ctx.font='10px Courier New';
     ctx.textBaseline='bottom';
-    ctx.fillText('[1-4] BUY  ·  [↑↓ / D-PAD] SELECT  ·  [ENTER / A] CONFIRM  ·  [ESC / B] RETURN',W/2,H-4);
+    ctx.fillText('[↑↓/D-PAD] SELECT  ·  [ENTER/A] BUY  ·  [1-8] DIRECT BUY  ·  [ESC/B] EXIT',W/2,H-4);
     ctx.textAlign='left';ctx.textBaseline='alphabetic';
 }
 function drawAlly(ctx,cx,fy,role,frame,dialogue){
@@ -916,10 +938,14 @@ class Player{
         if(this.shootCD>0)this.shootCD--;
         const wantShoot=pressed['KeyZ']||pressed['KeyX']||pressed['ControlLeft']||pressed['ControlRight'];
         if(wantShoot&&this.shootCD===0){
+            const wpn=WEAPONS[currentWeaponIdx];
             const bx=this.facing===1?this.x+this.w+8:this.x-18;
             const by=this.y+(crouching?this.h*0.62:this.h*0.56);
-            bullets.push(new Bullet(bx,by,this.facing*13,'player'));
-            this.shootCD=14;sfxShoot();
+            for(let p=0;p<wpn.pellets;p++){
+                const vy=wpn.pellets>1?(p-(wpn.pellets-1)/2)*wpn.spread:0;
+                bullets.push(new Bullet(bx,by,this.facing*wpn.spd,'player',wpn.bcolor,vy));
+            }
+            this.shootCD=wpn.cd;sfxShoot();
         }
         if(this.hitFlash>0)this.hitFlash--;
     }
@@ -1018,7 +1044,7 @@ class Raider{
     update(bullets,sm=1){
         this.frame++;if(this.hitFlash>0)this.hitFlash--;this.shootCD--;
         if(this.shootCD<=0&&this.x<W+20){
-            bullets.push(new Bullet(this.cx-22,this.cy-8,-7,'enemy'));
+            bullets.push(new Bullet(this.cx-22,GROUND-52,-7,'enemy'));
             this.shootCD=rInt(100,180);this.shootFlash=18;addShake(1.5);sfxEnemyShoot();
         }
         if(this.shootFlash>0)this.shootFlash--;this.x+=this.vx*sm;
@@ -1046,21 +1072,50 @@ function capsDrop(e){
     return rInt(25,40); // raider
 }
 
+// ── Weapons ────────────────────────────────────────────────────────────
+const WEAPONS = [
+    { id:'pistol', label:'10mm PISTOL',   dmg:25, cd:14, spd:13, bcolor:null,      pellets:1, spread:0 },
+    { id:'laser',  label:'LASER PISTOL',  dmg:18, cd:7,  spd:17, bcolor:'#ff44ff', pellets:1, spread:0 },
+    { id:'shotgun',label:'SHOTGUN',       dmg:35, cd:28, spd:10, bcolor:'#ffaa44', pellets:3, spread:2.2 },
+    { id:'rifle',  label:'HUNTING RIFLE', dmg:55, cd:40, spd:15, bcolor:'#ffff55', pellets:1, spread:0 },
+];
+let currentWeaponIdx=0;
+let ownedWeapons=new Set([0]);
+const pickle3000=true;
+function sfxWeaponSwitch(){
+    try{
+        const a=ac(),o=a.createOscillator(),g=a.createGain();
+        o.connect(g);g.connect(a.destination);o.type='square';
+        o.frequency.setValueAtTime(660,a.currentTime);
+        o.frequency.setValueAtTime(990,a.currentTime+0.05);
+        g.gain.setValueAtTime(0.1,a.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.1);
+        o.start();o.stop(a.currentTime+0.1);
+    }catch(e){}
+}
+
 // ── Shop ───────────────────────────────────────────────────────────────
 const SHOP_ITEMS = [
-    { label:'STIMPAK',    desc:'+50 HP',              cost:30, action:()=>{ player.hp=Math.min(player.maxHp,player.hp+50); } },
-    { label:'NUKA-COLA',  desc:'FULL HEALTH RESTORE', cost:80, action:()=>{ player.hp=player.maxHp; } },
-    { label:'SILENCER',   desc:'10s GUN SUPPRESSOR',  cost:25, action:()=>{ silencerTicks=600; } },
-    { label:'VATS BOOST', desc:'RECHARGE ALL AP',     cost:50, action:()=>{ vats.ap=VATS_MAX_AP; vats.cooldown=0; } },
+    { label:'SUNSET SARSAPARILLA', desc:'+1 HP',          cost:1,   action:()=>{ player.hp=Math.min(player.maxHp,player.hp+1); } },
+    { label:'STIMPAK',       desc:'+50 HP',              cost:30,  action:()=>{ player.hp=Math.min(player.maxHp,player.hp+50); } },
+    { label:'NUKA-COLA',     desc:'FULL HEALTH RESTORE', cost:80,  action:()=>{ player.hp=player.maxHp; } },
+    { label:'SILENCER',      desc:'10s GUN SUPPRESSOR',  cost:25,  action:()=>{ silencerTicks=600; } },
+    { label:'VATS BOOST',    desc:'RECHARGE ALL AP',     cost:50,  action:()=>{ vats.ap=VATS_MAX_AP; vats.cooldown=0; } },
+    { label:'LASER PISTOL',  desc:'FAST  18 DMG  ENERGY',cost:60,  weaponIdx:1,   action:()=>{ ownedWeapons.add(1);currentWeaponIdx=1; } },
+    { label:'SHOTGUN',       desc:'3-PELLET 35DMG SPREAD',cost:80, weaponIdx:2,   action:()=>{ ownedWeapons.add(2);currentWeaponIdx=2; } },
+    { label:'HUNTING RIFLE', desc:'HIGH DMG 55  SINGLE', cost:110, weaponIdx:3,   action:()=>{ ownedWeapons.add(3);currentWeaponIdx=3; } },
 ];
 function buyShopItem(i){
     const item=SHOP_ITEMS[i];
     if(!item)return;
+    if(item.weaponIdx!==undefined&&currentWeaponIdx===item.weaponIdx){
+        vaultMsg='ALREADY EQUIPPED!';vaultMsgTimer=80;return;
+    }
     if(caps>=item.cost){
-        caps-=item.cost; item.action();
-        vaultMsg='BOUGHT: '+item.label+'!'; vaultMsgTimer=120; sfxPickup();
-    } else {
-        vaultMsg='INSUFFICIENT CAPS'; vaultMsgTimer=80;
+        caps-=item.cost;item.action();
+        vaultMsg='BOUGHT: '+item.label+'!';vaultMsgTimer=120;sfxPickup();
+    }else{
+        vaultMsg='INSUFFICIENT CAPS';vaultMsgTimer=80;
     }
 }
 
@@ -1132,6 +1187,180 @@ function drawVATSOverlay(ctx,enemies,vatsRef,frame){
     ctx.textAlign='left';ctx.textBaseline='alphabetic';
 }
 
+// ── Pickle 3000 (Pip-Boy style wrist device) ───────────────────────────
+function drawPickle3000(ctx,player,enemies,score,caps,frame){
+    const px=6,py=46,pw=264,ph=192;
+    ctx.save();
+
+    // --- Outer device body ---
+    const bodyG=ctx.createLinearGradient(px,py,px+pw,py+ph);
+    bodyG.addColorStop(0,'#3e4230');bodyG.addColorStop(0.45,'#2e3224');bodyG.addColorStop(1,'#232716');
+    ctx.fillStyle=bodyG;
+    roundRect(ctx,px,py,pw,ph,14);ctx.fill();
+    ctx.strokeStyle='#52583a';ctx.lineWidth=2.5;
+    roundRect(ctx,px,py,pw,ph,14);ctx.stroke();
+    // inner highlight bevel
+    ctx.strokeStyle='rgba(140,160,90,0.18)';ctx.lineWidth=1;
+    roundRect(ctx,px+3,py+3,pw-6,ph-6,11);ctx.stroke();
+
+    // side vent ridges (left edge)
+    ctx.strokeStyle='#1e2215';ctx.lineWidth=1.5;
+    for(let ri=0;ri<6;ri++){ctx.beginPath();ctx.moveTo(px+6,py+30+ri*18);ctx.lineTo(px+6,py+40+ri*18);ctx.stroke();}
+
+    // --- Right-side knobs ---
+    const kx=px+pw-20;
+    for(let ki=0;ki<3;ki++){
+        const ky=py+38+ki*46;
+        ctx.fillStyle='#141710';
+        ctx.beginPath();ctx.arc(kx,ky,13,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#3a3e28';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.arc(kx,ky,13,0,Math.PI*2);ctx.stroke();
+        const kg=ctx.createRadialGradient(kx-4,ky-4,1,kx,ky,10);
+        kg.addColorStop(0,'#62664a');kg.addColorStop(1,'#282c1c');
+        ctx.fillStyle=kg;
+        ctx.beginPath();ctx.arc(kx,ky,10,0,Math.PI*2);ctx.fill();
+        // tick
+        const ka=ki*1.1-0.6+Math.sin(frame*0.003+ki)*0.05;
+        ctx.strokeStyle='#9ab855';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(kx,ky);ctx.lineTo(kx+Math.cos(ka)*7,ky+Math.sin(ka)*7);ctx.stroke();
+        // LED dot above knob
+        ctx.fillStyle=ki===0?'#00ff44':ki===1?'#ffcc00':'#ff4422';
+        ctx.beginPath();ctx.arc(kx,ky-16,3,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=0.4;ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=5;
+        ctx.beginPath();ctx.arc(kx,ky-16,3,0,Math.PI*2);ctx.fill();
+        ctx.shadowBlur=0;ctx.globalAlpha=1;
+    }
+
+    // --- Device label above screen ---
+    ctx.fillStyle='#6e7848';ctx.font='bold 7px Courier New';
+    ctx.textAlign='left';ctx.textBaseline='top';
+    ctx.fillText('ROBCO INDUSTRIES  UNIFIED UTILITY',px+16,py+6);
+
+    // --- Screen bezel ---
+    const sx=px+14,sy=py+17,sw=pw-46,sh=ph-26;
+    ctx.fillStyle='#0a0d06';
+    roundRect(ctx,sx-5,sy-5,sw+10,sh+10,7);ctx.fill();
+    ctx.strokeStyle='#1a1e10';ctx.lineWidth=2;
+    roundRect(ctx,sx-5,sy-5,sw+10,sh+10,7);ctx.stroke();
+
+    // --- CRT screen ---
+    ctx.fillStyle='#000c00';
+    roundRect(ctx,sx,sy,sw,sh,5);ctx.fill();
+    ctx.shadowColor='#00ff44';ctx.shadowBlur=14;
+    ctx.strokeStyle='#00cc33';ctx.lineWidth=1;
+    roundRect(ctx,sx,sy,sw,sh,5);ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // scanlines
+    for(let sl=sy+1;sl<sy+sh;sl+=2){
+        ctx.fillStyle='rgba(0,0,0,0.22)';ctx.fillRect(sx+1,sl,sw-2,1);
+    }
+    // screen glare
+    ctx.globalAlpha=0.07;
+    const glr=ctx.createLinearGradient(sx,sy,sx+sw*0.7,sy+sh*0.5);
+    glr.addColorStop(0,'#ffffff');glr.addColorStop(1,'transparent');
+    ctx.fillStyle=glr;
+    roundRect(ctx,sx,sy,sw,sh,5);ctx.fill();
+    ctx.globalAlpha=1;
+
+    // --- Screen content (clipped) ---
+    ctx.save();
+    ctx.beginPath();roundRect(ctx,sx+1,sy+1,sw-2,sh-2,5);ctx.clip();
+
+    // header bar
+    ctx.fillStyle='rgba(0,90,0,0.75)';ctx.fillRect(sx,sy,sw,17);
+    ctx.fillStyle='#00ff88';ctx.font='bold 10px Courier New';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('PICKLE  3000',sx+sw/2,sy+8);
+
+    // tabs: STAT | ITEM | DATA
+    const tabW=(sw-4)/3;
+    ['STAT','ITEM','DATA'].forEach((t,ti)=>{
+        const tx=sx+2+ti*tabW;
+        ctx.fillStyle=ti===0?'rgba(0,130,0,0.6)':'rgba(0,50,0,0.35)';
+        ctx.fillRect(tx,sy+18,tabW-2,13);
+        ctx.strokeStyle=ti===0?'#00ff44':'#005522';ctx.lineWidth=0.5;
+        ctx.strokeRect(tx,sy+18,tabW-2,13);
+        ctx.fillStyle=ti===0?'#00ff44':'#005522';
+        ctx.font='bold 8px Courier New';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(t,tx+tabW/2-1,sy+24);
+    });
+
+    // divider
+    ctx.strokeStyle='#00882222';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(sx+4,sy+32);ctx.lineTo(sx+sw-4,sy+32);ctx.stroke();
+
+    // stats content
+    ctx.font='8px Courier New';ctx.textAlign='left';ctx.textBaseline='top';
+    let row=sy+36;const lh=14;
+    const hpPct=player.hp/player.maxHp;
+
+    // HP row
+    ctx.fillStyle='#448844';ctx.fillText('HP',sx+6,row);
+    ctx.fillStyle='#001800';ctx.fillRect(sx+24,row+1,sw-34,9);
+    ctx.fillStyle=hpPct>0.5?'#22ee22':hpPct>0.25?'#eeaa00':'#ee2200';
+    ctx.fillRect(sx+24,row+1,(sw-34)*hpPct,9);
+    ctx.strokeStyle='#006600';ctx.lineWidth=0.5;ctx.strokeRect(sx+24,row+1,sw-34,9);
+    ctx.fillStyle='#00ff88';ctx.font='bold 7px Courier New';ctx.textAlign='right';
+    ctx.fillText(`${player.hp}/${player.maxHp}`,sx+sw-4,row+1);
+    row+=lh;
+
+    ctx.font='8px Courier New';ctx.textAlign='left';
+
+    // Weapon
+    ctx.fillStyle='#448844';ctx.fillText('WPN',sx+6,row);
+    ctx.fillStyle='#00ff88';ctx.fillText(WEAPONS[currentWeaponIdx].label,sx+30,row);
+    row+=lh;
+
+    // DMG/SPD
+    const wpn=WEAPONS[currentWeaponIdx];
+    ctx.fillStyle='#448844';ctx.fillText('DMG',sx+6,row);
+    ctx.fillStyle='#00ff88';ctx.fillText(`${wpn.dmg}${wpn.pellets>1?' x'+wpn.pellets:''}`,sx+30,row);
+    ctx.fillStyle='#448844';ctx.fillText('SPD',sx+sw/2,row);
+    ctx.fillStyle='#00ff88';ctx.fillText(`${wpn.spd}`,sx+sw/2+24,row);
+    row+=lh;
+
+    // Enemies
+    const onScreen=enemies.filter(e=>!e.dead&&!e.squished&&e.x>0&&e.x<W).length;
+    ctx.fillStyle='#448844';ctx.fillText('ENMY',sx+6,row);
+    ctx.fillStyle=onScreen>0?'#ff5533':'#00ff88';
+    ctx.fillText(`${onScreen} DETECTED`,sx+30,row);
+    row+=lh;
+
+    // Caps
+    ctx.fillStyle='#448844';ctx.fillText('CAPS',sx+6,row);
+    ctx.fillStyle='#ffcc00';ctx.fillText(`${caps}`,sx+30,row);
+    row+=lh;
+
+    // Score
+    ctx.fillStyle='#448844';ctx.fillText('SCORE',sx+6,row);
+    ctx.fillStyle='#00ff88';ctx.fillText(`${score}`,sx+34,row);
+
+    // bottom status blink
+    if(Math.floor(frame/28)%2===0){
+        ctx.fillStyle='rgba(0,255,80,0.12)';ctx.fillRect(sx,sy+sh-14,sw,13);
+        ctx.fillStyle='#00aa44';ctx.font='7px Courier New';ctx.textAlign='center';
+        ctx.fillText('PICKLE INDUSTRIES  UNIFIED WRIST DEVICE',sx+sw/2,sy+sh-6);
+    }
+
+    ctx.restore(); // end clip
+
+    // --- Wrist strap ---
+    ctx.fillStyle='#18150c';
+    ctx.fillRect(px+28,py+ph,pw-56,9);
+    ctx.fillRect(px+46,py+ph+9,pw-92,5);
+    ctx.strokeStyle='#28220f';ctx.lineWidth=1;
+    ctx.strokeRect(px+28,py+ph,pw-56,9);
+    for(let hi=0;hi<6;hi++){
+        ctx.fillStyle='#06050300';ctx.beginPath();
+        ctx.arc(px+54+hi*22,py+ph+4,2,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#000';ctx.lineWidth=0.8;
+        ctx.beginPath();ctx.arc(px+54+hi*22,py+ph+4,2,0,Math.PI*2);ctx.stroke();
+    }
+
+    ctx.restore();
+}
+
 // ── HUD ────────────────────────────────────────────────────────────────
 function drawHUD(ctx,player,score,highScore,diffTick,vatsRef,silTicks,frame,capsAmt){
     ctx.fillStyle='rgba(0,0,0,0.72)';ctx.fillRect(0,0,W,42);
@@ -1176,12 +1405,14 @@ function drawHUD(ctx,player,score,highScore,diffTick,vatsRef,silTicks,frame,caps
     ctx.fillStyle='#ffcc00';ctx.font='bold 12px Courier New';
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(`¢ ${capsAmt??0}`,W/2,H-17);
+    ctx.fillStyle='#00aaff';ctx.font='bold 11px Courier New';ctx.textAlign='center';
+    ctx.fillText(`⚡ ${WEAPONS[currentWeaponIdx].label}  [Q/LB]`,W/2+80,H-17);
     if(!isTouchDevice()){
         ctx.fillStyle='#3f3';ctx.font='11px Courier New';
         ctx.textAlign='left';
         ctx.fillText('← → MOVE',10,H-17);ctx.fillText('↑ JUMP',95,H-17);
-        ctx.fillText('↓ CROUCH',155,H-17);ctx.fillText('Z/CTRL SHOOT',245,H-17);
-        ctx.fillText('[V] VATS',360,H-17);
+        ctx.fillText('↓ CROUCH',155,H-17);ctx.fillText('Z SHOOT',245,H-17);
+        ctx.fillText('[V] VATS',320,H-17);
     }
     const phases=['⚡ EASY','⚡ THREAT','⚠ DANGER','☢ LETHAL'];
     const pi=Math.min(3,Math.floor(diffTick/1800));
@@ -1240,7 +1471,7 @@ let spawnTimer=0,diffTick=0,gameFrame=0;
 let vaultSpawnCD=0;
 let pickupSpawnCD=rInt(600,1200);
 let worldSpeedMult=1.0; // slows down when vault approaches
-let caps=0,vaultMsg='',vaultMsgTimer=0,vaultSelected=0;
+let caps=0,vaultMsg='',vaultMsgTimer=0,vaultSelected=0,vaultScrollOffset=0;
 
 function initGame(){
     player=new Player();
@@ -1248,7 +1479,8 @@ function initGame(){
     scroll=0;score=0;spawnTimer=0;diffTick=0;gameFrame=0;
     vaultSpawnCD=1800;pickupSpawnCD=rInt(600,1200);
     silencerTicks=0;worldSpeedMult=1.0;
-    caps=0;vaultMsg='';vaultMsgTimer=0;vaultSelected=0;
+    caps=0;vaultMsg='';vaultMsgTimer=0;vaultSelected=0;vaultScrollOffset=0;
+    currentWeaponIdx=0;ownedWeapons=new Set([0]);
     vats={active:false,ap:VATS_MAX_AP,cooldown:0,queue:[],executing:false,execTimer:0};
 }
 
@@ -1282,8 +1514,16 @@ function update(){
     }
     if(state==='vault'){
         if(vaultMsgTimer>0)vaultMsgTimer--;
-        if(pressed['ArrowUp']||pressed['KeyW'])  vaultSelected=(vaultSelected-1+SHOP_ITEMS.length)%SHOP_ITEMS.length;
-        if(pressed['ArrowDown']||pressed['KeyS']) vaultSelected=(vaultSelected+1)%SHOP_ITEMS.length;
+        if(pressed['ArrowUp']||pressed['KeyW']){
+            vaultSelected=(vaultSelected-1+SHOP_ITEMS.length)%SHOP_ITEMS.length;
+            if(vaultSelected<vaultScrollOffset)vaultScrollOffset=vaultSelected;
+            if(vaultScrollOffset>Math.max(0,SHOP_ITEMS.length-VAULT_ITEMS_VISIBLE))vaultScrollOffset=Math.max(0,SHOP_ITEMS.length-VAULT_ITEMS_VISIBLE);
+        }
+        if(pressed['ArrowDown']||pressed['KeyS']){
+            vaultSelected=(vaultSelected+1)%SHOP_ITEMS.length;
+            if(vaultSelected>=vaultScrollOffset+VAULT_ITEMS_VISIBLE)vaultScrollOffset=vaultSelected-VAULT_ITEMS_VISIBLE+1;
+            if(vaultScrollOffset<0)vaultScrollOffset=0;
+        }
         for(let i=0;i<SHOP_ITEMS.length;i++) if(pressed[`Digit${i+1}`]) buyShopItem(i);
         if(pressed['Enter']||pressed['Space']) buyShopItem(vaultSelected);
         if(pressed['Escape']||pressed['KeyE']||pressed['KeyB']){state='playing';}
@@ -1353,6 +1593,14 @@ function update(){
                 }
             }
         }
+    }
+
+    // Weapon cycle (Q key or LB)
+    if(pressed['KeyQ']&&!frozen){
+        const owned=Array.from(ownedWeapons).sort((a,b)=>a-b);
+        const ci=owned.indexOf(currentWeaponIdx);
+        currentWeaponIdx=owned[(ci+1)%owned.length];
+        sfxWeaponSwitch();
     }
 
     // VATS cooldown tick
@@ -1427,7 +1675,7 @@ function update(){
             for(const e of enemies){
                 if(!e.dead&&!e.squished&&overlap(b.rect,e.rect)){
                     b.dead=true;
-                    e.takeDamage(25,particles);
+                    e.takeDamage(WEAPONS[currentWeaponIdx].dmg,particles);
                     if(e.dead){score+=e.score;caps+=capsDrop(e);}
                     for(let i=0;i<6;i++)particles.push(new Particle(b.x,b.y,rand(-4,4),rand(-4,0),'#ffcc00',rInt(10,20),3));
                     break;
@@ -1543,6 +1791,7 @@ function draw(){
         if(vats.active)drawVATSOverlay(ctx,enemies,vats,gameFrame);
         // HUD
         drawHUD(ctx,player,score,highScore,diffTick,vats,silencerTicks,gameFrame,caps);
+        if(pickle3000)drawPickle3000(ctx,player,enemies,score,caps,gameFrame);
         if(state==='dead')drawDead(ctx,score,highScore,score>=highScore);
         const vi = vaultDoors.some(v=>v.interactive);
         drawTouchControls(ctx, vi);
