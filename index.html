@@ -489,48 +489,89 @@ function drawT51(ctx,cx,fy,facing,runFrame,running,airborne){
 function drawT51Crouch(ctx,cx,fy,facing){
     ctx.save();
     if(facing===-1){ctx.translate(cx*2,0);ctx.scale(-1,1);}
+
+    // ── Boots (wide stance) ───────────────────────────────────────────────
     ctx.fillStyle='#303840';
-    ctx.fillRect(cx-15,fy-9,13,9);ctx.fillRect(cx+3,fy-9,13,9);
+    ctx.fillRect(cx-20,fy-8,11,8);   ctx.fillRect(cx+9,fy-8,11,8);
     ctx.fillStyle='#222a30';
-    ctx.fillRect(cx-16,fy-4,14,4);ctx.fillRect(cx+3,fy-4,14,4);
+    ctx.fillRect(cx-22,fy-4,13,4);   ctx.fillRect(cx+9,fy-4,13,4);
+
+    // ── Shins (vertical — directly below knees) ───────────────────────────
     ctx.fillStyle='#4a5a6a';
-    ctx.fillRect(cx-14,fy-26,12,17);ctx.fillRect(cx+3,fy-26,12,17);
+    ctx.fillRect(cx-20,fy-22,10,14); ctx.fillRect(cx+10,fy-22,10,14);
+
+    // ── Knee plates (wider than shin — marks the 90° bend) ────────────────
     ctx.fillStyle='#607080';
-    ctx.fillRect(cx-15,fy-30,14,7);ctx.fillRect(cx+2,fy-30,14,7);
-    ctx.fillStyle='#4a5a6a';
-    ctx.fillRect(cx-14,fy-42,12,14);ctx.fillRect(cx+3,fy-42,12,14);
-    ctx.fillStyle='#384858';ctx.fillRect(cx-15,fy-44,30,6);
-    ctx.fillStyle='#4a5a6a';
-    roundRect(ctx,cx-16,fy-58,32,16,4);ctx.fill();
-    ctx.fillStyle='#5a6a7a';
-    roundRect(ctx,cx-12,fy-56,24,14,3);ctx.fill();
-    ctx.fillStyle='#384858';ctx.fillRect(cx-12,fy-49,24,3);
-    ctx.fillStyle='#002200';ctx.fillRect(cx-5,fy-54,10,6);
-    ctx.fillStyle='#00ee55';ctx.fillRect(cx-4,fy-53,8,4);
-    ctx.globalAlpha=0.3;ctx.fillStyle='#00ff66';ctx.fillRect(cx-7,fy-56,14,10);ctx.globalAlpha=1;
-    ctx.fillStyle='#5a6a7a';
-    roundRect(ctx,cx-26,fy-60,14,11,3);ctx.fill();
-    roundRect(ctx,cx+12,fy-60,14,11,3);ctx.fill();
-    ctx.fillStyle='#4a5a6a';
-    ctx.fillRect(cx-24,fy-56,9,16);ctx.fillRect(cx+16,fy-56,9,16);
-    ctx.fillStyle='#303840';ctx.fillRect(cx+16,fy-42,9,6);
-    draw10mm(ctx,cx+23,fy-42);
-    ctx.fillStyle='#4a5a6a';
-    roundRect(ctx,cx-14,fy-70,28,16,6);ctx.fill();
-    ctx.fillStyle='#5a6a7a';
-    roundRect(ctx,cx-12,fy-70,24,8,3);ctx.fill();
+    ctx.fillRect(cx-22,fy-27,13,6);  ctx.fillRect(cx+9,fy-27,13,6);
     ctx.fillStyle='#384858';
-    ctx.fillRect(cx-14,fy-62,8,10);ctx.fillRect(cx+6,fy-62,8,10);
-    ctx.fillStyle='#001800';
-    ctx.fillRect(cx-11,fy-64,22,7);ctx.fillRect(cx-4,fy-70,8,15);
-    ctx.fillStyle='#00ff55';
-    ctx.fillRect(cx-10,fy-63,20,5);ctx.fillRect(cx-3,fy-69,6,13);
-    ctx.globalAlpha=0.28;ctx.fillStyle='#00ff66';ctx.fillRect(cx-13,fy-65,26,9);ctx.globalAlpha=1;
-    ctx.fillStyle='#303840';ctx.fillRect(cx-8,fy-55,16,4);
+    ctx.fillRect(cx-22,fy-24,13,2);  ctx.fillRect(cx+9,fy-24,13,2);
+
+    // ── Thighs (horizontal — left goes cx-20→cx, right goes cx→cx+20) ────
+    //    The 90° L-corner is at (cx-20, fy-22) left and (cx+20, fy-22) right.
+    ctx.fillStyle='#4a5a6a';
+    ctx.fillRect(cx-20,fy-36,20,10); ctx.fillRect(cx,fy-36,20,10);
+    ctx.fillStyle='#384858';
+    ctx.fillRect(cx-20,fy-30,20,2);  ctx.fillRect(cx,fy-30,20,2);
+
+    // ── Pelvis ────────────────────────────────────────────────────────────
+    ctx.fillStyle='#384858';
+    ctx.fillRect(cx-13,fy-40,26,5);
+
+    // ── Torso ─────────────────────────────────────────────────────────────
+    ctx.fillStyle='#4a5a6a';
+    ctx.fillRect(cx-12,fy-54,24,14);
+    ctx.fillStyle='#384858';
+    ctx.fillRect(cx-12,fy-49,24,3);
+    ctx.fillStyle='#4a5a6a';
+    ctx.fillRect(cx-12,fy-62,24,10);
+    ctx.fillStyle='#002200';  ctx.fillRect(cx-4,fy-60,8,7);
+    ctx.fillStyle='#00ee55';  ctx.fillRect(cx-3,fy-59,6,5);
+    ctx.globalAlpha=0.25; ctx.fillStyle='#00ff66'; ctx.fillRect(cx-6,fy-62,12,9); ctx.globalAlpha=1;
+
+    // ── Shoulders ─────────────────────────────────────────────────────────
+    ctx.fillStyle='#5a6a7a';
+    ctx.fillRect(cx-25,fy-62,14,10); ctx.fillRect(cx+11,fy-62,14,10);
+    ctx.fillStyle='#384858';
+    ctx.fillRect(cx-25,fy-54,14,3);  ctx.fillRect(cx+11,fy-54,14,3);
+
+    // ── Arms ──────────────────────────────────────────────────────────────
+    ctx.fillStyle='#4a5a6a';
+    ctx.fillRect(cx-24,fy-58,9,18);
+    ctx.fillRect(cx+15,fy-58,9,18);
+    ctx.fillStyle='#384858'; ctx.fillRect(cx+15,fy-44,9,6);
+    draw10mm(ctx,cx+22,fy-44);
+
+    // ── Neck ──────────────────────────────────────────────────────────────
+    ctx.fillStyle='#303840'; ctx.fillRect(cx-8,fy-64,16,4);
     ctx.fillStyle='#222a30';
-    for(let i=0;i<4;i++)ctx.fillRect(cx-6+i*4,fy-54,2,3);
+    for(let i=0;i<4;i++) ctx.fillRect(cx-6+i*4,fy-63,2,3);
+
+    // ── Helmet visor section (all fillRect — no roundRect) ────────────────
+    ctx.fillStyle='#4a5a6a';  ctx.fillRect(cx-15,fy-74,30,12);
+    ctx.fillStyle='#5a6a7a';  ctx.fillRect(cx-12,fy-72,24,10);
+    ctx.fillStyle='#384858';  ctx.fillRect(cx-12,fy-67,24,3);
+    ctx.fillStyle='#002200';  ctx.fillRect(cx-4,fy-72,8,7);
+    ctx.fillStyle='#00ee55';  ctx.fillRect(cx-3,fy-71,6,5);
+    ctx.globalAlpha=0.3; ctx.fillStyle='#00ff66'; ctx.fillRect(cx-7,fy-74,14,11); ctx.globalAlpha=1;
+    // Ear pads
+    ctx.fillStyle='#5a6a7a';
+    ctx.fillRect(cx-27,fy-74,13,11); ctx.fillRect(cx+14,fy-74,13,11);
     ctx.fillStyle='#384858';
-    ctx.fillRect(cx-16,fy-63,4,8);ctx.fillRect(cx+12,fy-63,4,8);
+    ctx.fillRect(cx-27,fy-65,13,3);  ctx.fillRect(cx+14,fy-65,13,3);
+
+    // ── Helmet dome (all fillRect) ────────────────────────────────────────
+    ctx.fillStyle='#4a5a6a';  ctx.fillRect(cx-14,fy-84,28,12);
+    ctx.fillStyle='#5a6a7a';  ctx.fillRect(cx-12,fy-84,24,8);
+    ctx.fillStyle='#384858';
+    ctx.fillRect(cx-14,fy-79,7,8);   ctx.fillRect(cx+7,fy-79,7,8);
+    ctx.fillStyle='#001800';
+    ctx.fillRect(cx-11,fy-80,22,7);  ctx.fillRect(cx-4,fy-84,8,16);
+    ctx.fillStyle='#00ff55';
+    ctx.fillRect(cx-10,fy-79,20,5);  ctx.fillRect(cx-3,fy-83,6,14);
+    ctx.globalAlpha=0.28; ctx.fillStyle='#00ff66'; ctx.fillRect(cx-13,fy-81,26,9); ctx.globalAlpha=1;
+    ctx.fillStyle='#384858';
+    ctx.fillRect(cx-16,fy-78,4,9);   ctx.fillRect(cx+12,fy-78,4,9);
+
     ctx.restore();
 }
 
@@ -740,7 +781,7 @@ function drawVaultInterior(ctx,frame){
         const sel=(vaultSelected===i);
         const afford=caps>=item.cost;
         const isEquipped=item.weaponIdx!==undefined&&currentWeaponIdx===item.weaponIdx;
-        const isOwned=item.oneTime&&pickle3000;
+        const isOwned=item.oneTime;
         const unavail=isEquipped||isOwned;
         if(sel){
             ctx.fillStyle='rgba(0,255,80,0.13)';
@@ -943,7 +984,9 @@ class Player{
     update(bullets){
         const spd=3.8;
         const crouching=(keys['ArrowDown']||keys['KeyS'])&&this.onGround;
-        this.crouching=crouching;this.h=crouching?44:64;
+        this.crouching=crouching;
+        const newH=crouching?44:64;
+        if(this.h!==newH){this.y+=this.h-newH;this.h=newH;}
         if(!crouching){
             if(keys['ArrowLeft']||keys['KeyA']){this.vx=-spd;this.facing=-1;}
             else if(keys['ArrowRight']||keys['KeyD']){this.vx=spd;this.facing=1;}
@@ -1098,14 +1141,77 @@ function capsDrop(e){
 
 // ── Weapons ────────────────────────────────────────────────────────────
 const WEAPONS = [
-    { id:'pistol', label:'10mm PISTOL',   dmg:25, cd:14, spd:13, bcolor:null,      pellets:1, spread:0 },
-    { id:'laser',  label:'LASER PISTOL',  dmg:18, cd:7,  spd:17, bcolor:'#ff44ff', pellets:1, spread:0 },
-    { id:'shotgun',label:'SHOTGUN',       dmg:35, cd:28, spd:10, bcolor:'#ffaa44', pellets:3, spread:2.2 },
-    { id:'rifle',  label:'HUNTING RIFLE', dmg:55, cd:40, spd:15, bcolor:'#ffff55', pellets:1, spread:0 },
+    { id:'pistol', label:'10mm PISTOL',   dmg:25, cd:14, spd:13, bcolor:null,      pellets:1, spread:0,   cost:0   },
+    { id:'laser',  label:'LASER PISTOL',  dmg:18, cd:7,  spd:17, bcolor:'#ff44ff', pellets:1, spread:0,   cost:60  },
+    { id:'shotgun',label:'SHOTGUN',       dmg:35, cd:28, spd:10, bcolor:'#ffaa44', pellets:3, spread:2.2, cost:80  },
+    { id:'rifle',  label:'HUNTING RIFLE', dmg:55, cd:40, spd:15, bcolor:'#ffff55', pellets:1, spread:0,   cost:110 },
 ];
 let currentWeaponIdx=0;
 let ownedWeapons=new Set([0]);
-const pickle3000=true;
+
+// ── Clothing ──────────────────────────────────────────────────────────────
+const CLOTHING_ITEMS=[
+    {label:'VAULT SUIT',     desc:'+25 MAX HP',          cost:80,  id:'vault_suit',  apply:()=>{player.maxHp+=25;player.hp=Math.min(player.hp+25,player.maxHp);}},
+    {label:'LEATHER JACKET', desc:'+10 MAX HP',          cost:40,  id:'leather',     apply:()=>{player.maxHp+=10;}},
+    {label:'COMBAT ARMOR',   desc:'+50 MAX HP',          cost:150, id:'combat_armor',apply:()=>{player.maxHp+=50;player.hp=Math.min(player.hp+50,player.maxHp);}},
+    {label:'RAIDER LEATHERS',desc:'+35 MAX HP',          cost:100, id:'raider',      apply:()=>{player.maxHp+=35;}},
+    {label:'POWER CORE MOD', desc:'+20 MAX HP + SPEED',  cost:200, id:'power_core',  apply:()=>{player.maxHp+=20;player.hp=Math.min(player.hp+20,player.maxHp);}},
+];
+const ownedClothing=new Set();
+
+// ── Pickle 3000 state ─────────────────────────────────────────────────────
+let pickle3000Open=false,pickle3000Tab=0,pickle3000Sel=0,pickle3000Scroll=0;
+let pickle3000Msg='',pickle3000MsgTimer=0;
+const PICKLE_VISIBLE=5;
+function sfxPickle3000(){
+    try{
+        const a=ac(),o=a.createOscillator(),g=a.createGain();
+        o.connect(g);g.connect(a.destination);o.type='square';
+        o.frequency.setValueAtTime(440,a.currentTime);
+        o.frequency.setValueAtTime(660,a.currentTime+0.06);
+        o.frequency.setValueAtTime(550,a.currentTime+0.13);
+        g.gain.setValueAtTime(0.12,a.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.22);
+        o.start();o.stop(a.currentTime+0.22);
+    }catch(e){}
+}
+function getPickleList(){
+    if(pickle3000Tab===1)return WEAPONS.map((w,i)=>({label:w.label,desc:`DMG ${w.dmg}  SPD ${w.spd}${w.pellets>1?'  x'+w.pellets:''}`,cost:w.cost,owned:ownedWeapons.has(i),equipped:currentWeaponIdx===i,_idx:i}));
+    if(pickle3000Tab===2)return CLOTHING_ITEMS.map((c,i)=>({label:c.label,desc:c.desc,cost:c.cost,owned:ownedClothing.has(c.id),equipped:false,_idx:i}));
+    if(pickle3000Tab===3)return SHOP_ITEMS.filter(it=>it.weaponIdx===undefined).map((it,i)=>({label:it.label,desc:it.desc,cost:it.cost,owned:false,equipped:false,_idx:i}));
+    return[];
+}
+function pickle3000Buy(){
+    if(pickle3000Tab===0)return;
+    const list=getPickleList();
+    const entry=list[pickle3000Sel];if(!entry)return;
+    if(pickle3000Tab===1){
+        const wi=entry._idx;
+        if(ownedWeapons.has(wi)){
+            if(currentWeaponIdx===wi){pickle3000Msg='ALREADY EQUIPPED';}
+            else{currentWeaponIdx=wi;sfxWeaponSwitch();pickle3000Msg='EQUIPPED: '+WEAPONS[wi].label;}
+        }else if(caps>=WEAPONS[wi].cost){
+            caps-=WEAPONS[wi].cost;ownedWeapons.add(wi);currentWeaponIdx=wi;
+            pickle3000Msg='BOUGHT: '+WEAPONS[wi].label;sfxPickup();
+        }else{pickle3000Msg='INSUFFICIENT CAPS';}
+    }else if(pickle3000Tab===2){
+        const item=CLOTHING_ITEMS[entry._idx];if(!item)return;
+        if(ownedClothing.has(item.id)){pickle3000Msg='ALREADY OWNED';}
+        else if(caps>=item.cost){
+            caps-=item.cost;ownedClothing.add(item.id);item.apply();
+            pickle3000Msg='BOUGHT: '+item.label;sfxPickup();
+        }else{pickle3000Msg='INSUFFICIENT CAPS';}
+    }else if(pickle3000Tab===3){
+        const items=SHOP_ITEMS.filter(it=>it.weaponIdx===undefined);
+        const item=items[entry._idx];if(!item)return;
+        if(caps>=item.cost){
+            caps-=item.cost;item.action();
+            pickle3000Msg='USED: '+item.label;sfxPickup();
+        }else{pickle3000Msg='INSUFFICIENT CAPS';}
+    }
+    pickle3000MsgTimer=90;
+}
+
 function sfxWeaponSwitch(){
     try{
         const a=ac(),o=a.createOscillator(),g=a.createGain();
@@ -1132,8 +1238,8 @@ const SHOP_ITEMS = [
 function buyShopItem(i){
     const item=SHOP_ITEMS[i];
     if(!item)return;
-    if(item.weaponIdx!==undefined&&currentWeaponIdx===item.weaponIdx){
-        vaultMsg='ALREADY EQUIPPED!';vaultMsgTimer=80;return;
+    if(item.weaponIdx!==undefined&&ownedWeapons.has(item.weaponIdx)){
+        vaultMsg='ALREADY OWNED!';vaultMsgTimer=80;return;
     }
     if(caps>=item.cost){
         caps-=item.cost;item.action();
@@ -1211,177 +1317,179 @@ function drawVATSOverlay(ctx,enemies,vatsRef,frame){
     ctx.textAlign='left';ctx.textBaseline='alphabetic';
 }
 
-// ── Pickle 3000 (Pip-Boy style wrist device) ───────────────────────────
+// ── Pickle 3000 (full-screen menu, open with P) ───────────────────────────
 function drawPickle3000(ctx,player,enemies,score,caps,frame){
-    const px=6,py=46,pw=264,ph=192;
+    const pw=490,ph=310;
+    const px=Math.round((W-pw)/2),py=Math.round((H-ph)/2);
+    const tabs=['STAT','WEAP','CLTH','ITEM'];
+    const kx=px+pw-20;
     ctx.save();
+
+    // Dim the game world behind the device
+    ctx.fillStyle='rgba(0,6,0,0.76)';ctx.fillRect(0,0,W,H);
 
     // --- Outer device body ---
     const bodyG=ctx.createLinearGradient(px,py,px+pw,py+ph);
     bodyG.addColorStop(0,'#3e4230');bodyG.addColorStop(0.45,'#2e3224');bodyG.addColorStop(1,'#232716');
     ctx.fillStyle=bodyG;
-    roundRect(ctx,px,py,pw,ph,14);ctx.fill();
-    ctx.strokeStyle='#52583a';ctx.lineWidth=2.5;
-    roundRect(ctx,px,py,pw,ph,14);ctx.stroke();
-    // inner highlight bevel
-    ctx.strokeStyle='rgba(140,160,90,0.18)';ctx.lineWidth=1;
-    roundRect(ctx,px+3,py+3,pw-6,ph-6,11);ctx.stroke();
+    roundRect(ctx,px,py,pw,ph,12);ctx.fill();
+    ctx.strokeStyle='#52583a';ctx.lineWidth=2;
+    roundRect(ctx,px,py,pw,ph,12);ctx.stroke();
+    ctx.strokeStyle='rgba(140,160,90,0.14)';ctx.lineWidth=1;
+    roundRect(ctx,px+3,py+3,pw-6,ph-6,10);ctx.stroke();
 
-    // side vent ridges (left edge)
+    // Left vent ridges
     ctx.strokeStyle='#1e2215';ctx.lineWidth=1.5;
-    for(let ri=0;ri<6;ri++){ctx.beginPath();ctx.moveTo(px+6,py+30+ri*18);ctx.lineTo(px+6,py+40+ri*18);ctx.stroke();}
+    for(let ri=0;ri<6;ri++){ctx.beginPath();ctx.moveTo(px+6,py+28+ri*18);ctx.lineTo(px+6,py+38+ri*18);ctx.stroke();}
 
-    // --- Right-side knobs ---
-    const kx=px+pw-20;
-    for(let ki=0;ki<3;ki++){
-        const ky=py+38+ki*46;
-        ctx.fillStyle='#141710';
-        ctx.beginPath();ctx.arc(kx,ky,13,0,Math.PI*2);ctx.fill();
-        ctx.strokeStyle='#3a3e28';ctx.lineWidth=1.5;
-        ctx.beginPath();ctx.arc(kx,ky,13,0,Math.PI*2);ctx.stroke();
-        const kg=ctx.createRadialGradient(kx-4,ky-4,1,kx,ky,10);
-        kg.addColorStop(0,'#62664a');kg.addColorStop(1,'#282c1c');
-        ctx.fillStyle=kg;
-        ctx.beginPath();ctx.arc(kx,ky,10,0,Math.PI*2);ctx.fill();
-        // tick
-        const ka=ki*1.1-0.6+Math.sin(frame*0.003+ki)*0.05;
-        ctx.strokeStyle='#9ab855';ctx.lineWidth=2;
-        ctx.beginPath();ctx.moveTo(kx,ky);ctx.lineTo(kx+Math.cos(ka)*7,ky+Math.sin(ka)*7);ctx.stroke();
-        // LED dot above knob
-        ctx.fillStyle=ki===0?'#00ff44':ki===1?'#ffcc00':'#ff4422';
-        ctx.beginPath();ctx.arc(kx,ky-16,3,0,Math.PI*2);ctx.fill();
-        ctx.globalAlpha=0.4;ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=5;
-        ctx.beginPath();ctx.arc(kx,ky-16,3,0,Math.PI*2);ctx.fill();
-        ctx.shadowBlur=0;ctx.globalAlpha=1;
-    }
-
-    // --- Device label above screen ---
+    // Device label
     ctx.fillStyle='#6e7848';ctx.font='bold 7px Courier New';
     ctx.textAlign='left';ctx.textBaseline='top';
     ctx.fillText('ROBCO INDUSTRIES  UNIFIED UTILITY',px+16,py+6);
 
-    // --- Screen bezel ---
-    const sx=px+14,sy=py+17,sw=pw-46,sh=ph-26;
-    ctx.fillStyle='#0a0d06';
-    roundRect(ctx,sx-5,sy-5,sw+10,sh+10,7);ctx.fill();
-    ctx.strokeStyle='#1a1e10';ctx.lineWidth=2;
-    roundRect(ctx,sx-5,sy-5,sw+10,sh+10,7);ctx.stroke();
-
-    // --- CRT screen ---
-    ctx.fillStyle='#000c00';
-    roundRect(ctx,sx,sy,sw,sh,5);ctx.fill();
-    ctx.shadowColor='#00ff44';ctx.shadowBlur=14;
-    ctx.strokeStyle='#00cc33';ctx.lineWidth=1;
-    roundRect(ctx,sx,sy,sw,sh,5);ctx.stroke();
-    ctx.shadowBlur=0;
-
-    // scanlines
-    for(let sl=sy+1;sl<sy+sh;sl+=2){
-        ctx.fillStyle='rgba(0,0,0,0.22)';ctx.fillRect(sx+1,sl,sw-2,1);
+    // Right-side knobs (3)
+    for(let ki=0;ki<3;ki++){
+        const ky=py+42+ki*76;
+        ctx.fillStyle='#141710';ctx.beginPath();ctx.arc(kx,ky,12,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#3a3e28';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(kx,ky,12,0,Math.PI*2);ctx.stroke();
+        const kg=ctx.createRadialGradient(kx-3,ky-3,1,kx,ky,9);
+        kg.addColorStop(0,'#62664a');kg.addColorStop(1,'#282c1c');
+        ctx.fillStyle=kg;ctx.beginPath();ctx.arc(kx,ky,9,0,Math.PI*2);ctx.fill();
+        const ka=ki*1.1-0.6+Math.sin(frame*0.003+ki)*0.04;
+        ctx.strokeStyle='#9ab855';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(kx,ky);ctx.lineTo(kx+Math.cos(ka)*6,ky+Math.sin(ka)*6);ctx.stroke();
+        ctx.fillStyle=ki===0?'#00ff44':ki===1?'#ffcc00':'#ff4422';
+        ctx.globalAlpha=0.9;ctx.beginPath();ctx.arc(kx,ky-14,3,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=0.4;ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=5;
+        ctx.beginPath();ctx.arc(kx,ky-14,3,0,Math.PI*2);ctx.fill();
+        ctx.shadowBlur=0;ctx.globalAlpha=1;
     }
-    // screen glare
-    ctx.globalAlpha=0.07;
-    const glr=ctx.createLinearGradient(sx,sy,sx+sw*0.7,sy+sh*0.5);
+
+    // Screen bezel
+    const sx=px+14,sy=py+14,sw=pw-48,sh=ph-26;
+    ctx.fillStyle='#0a0d06';roundRect(ctx,sx-4,sy-4,sw+8,sh+8,7);ctx.fill();
+    ctx.fillStyle='#000c00';roundRect(ctx,sx,sy,sw,sh,5);ctx.fill();
+    ctx.shadowColor='#00ff44';ctx.shadowBlur=12;
+    ctx.strokeStyle='#00cc33';ctx.lineWidth=1;roundRect(ctx,sx,sy,sw,sh,5);ctx.stroke();
+    ctx.shadowBlur=0;
+    for(let sl=sy+1;sl<sy+sh;sl+=2){ctx.fillStyle='rgba(0,0,0,0.2)';ctx.fillRect(sx+1,sl,sw-2,1);}
+    ctx.globalAlpha=0.06;
+    const glr=ctx.createLinearGradient(sx,sy,sx+sw*0.6,sy+sh*0.4);
     glr.addColorStop(0,'#ffffff');glr.addColorStop(1,'transparent');
-    ctx.fillStyle=glr;
-    roundRect(ctx,sx,sy,sw,sh,5);ctx.fill();
+    ctx.fillStyle=glr;roundRect(ctx,sx,sy,sw,sh,5);ctx.fill();
     ctx.globalAlpha=1;
 
-    // --- Screen content (clipped) ---
-    ctx.save();
-    ctx.beginPath();roundRect(ctx,sx+1,sy+1,sw-2,sh-2,5);ctx.clip();
+    // Screen content (clipped)
+    ctx.save();ctx.beginPath();roundRect(ctx,sx+1,sy+1,sw-2,sh-2,4);ctx.clip();
 
-    // header bar
-    ctx.fillStyle='rgba(0,90,0,0.75)';ctx.fillRect(sx,sy,sw,17);
-    ctx.fillStyle='#00ff88';ctx.font='bold 10px Courier New';
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('PICKLE  3000',sx+sw/2,sy+8);
+    // Header
+    ctx.fillStyle='rgba(0,100,0,0.85)';ctx.fillRect(sx,sy,sw,18);
+    ctx.fillStyle='#00ff88';ctx.font='bold 11px Courier New';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('PICKLE  3000',sx+sw/2,sy+9);
+    ctx.fillStyle='#ffcc00';ctx.font='bold 9px Courier New';ctx.textAlign='right';
+    ctx.fillText(`◈ ${caps}`,sx+sw-6,sy+9);
 
-    // tabs: STAT | ITEM | DATA
-    const tabW=(sw-4)/3;
-    ['STAT','ITEM','DATA'].forEach((t,ti)=>{
-        const tx=sx+2+ti*tabW;
-        ctx.fillStyle=ti===0?'rgba(0,130,0,0.6)':'rgba(0,50,0,0.35)';
-        ctx.fillRect(tx,sy+18,tabW-2,13);
-        ctx.strokeStyle=ti===0?'#00ff44':'#005522';ctx.lineWidth=0.5;
-        ctx.strokeRect(tx,sy+18,tabW-2,13);
-        ctx.fillStyle=ti===0?'#00ff44':'#005522';
-        ctx.font='bold 8px Courier New';ctx.textAlign='center';ctx.textBaseline='middle';
-        ctx.fillText(t,tx+tabW/2-1,sy+24);
+    // Tabs: STAT | WEAP | CLTH | ITEM
+    const tabW=sw/4;
+    tabs.forEach((t,ti)=>{
+        const tx=sx+ti*tabW,active=ti===pickle3000Tab;
+        ctx.fillStyle=active?'rgba(0,155,0,0.75)':'rgba(0,40,0,0.4)';ctx.fillRect(tx,sy+19,tabW-1,14);
+        ctx.strokeStyle=active?'#00ff44':'#004422';ctx.lineWidth=0.5;ctx.strokeRect(tx,sy+19,tabW-1,14);
+        ctx.fillStyle=active?'#00ff88':'#005533';ctx.font='bold 8px Courier New';
+        ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(t,tx+tabW/2,sy+26);
     });
+    ctx.strokeStyle='#006622';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(sx+4,sy+34);ctx.lineTo(sx+sw-4,sy+34);ctx.stroke();
 
-    // divider
-    ctx.strokeStyle='#00882222';ctx.lineWidth=0.5;
-    ctx.beginPath();ctx.moveTo(sx+4,sy+32);ctx.lineTo(sx+sw-4,sy+32);ctx.stroke();
+    // Content area
+    const contentY=sy+37,contentH=sh-55,rowH=46;
 
-    // stats content
-    ctx.font='8px Courier New';ctx.textAlign='left';ctx.textBaseline='top';
-    let row=sy+36;const lh=14;
-    const hpPct=player.hp/player.maxHp;
+    if(pickle3000Tab===0){
+        // ── STAT ─────────────────────────────────────────────────────────
+        ctx.textBaseline='top';let row=contentY+2;const lh=17;
+        const hpPct=player.hp/player.maxHp;
+        ctx.fillStyle='#448844';ctx.font='9px Courier New';ctx.textAlign='left';ctx.fillText('HP',sx+6,row);
+        ctx.fillStyle='#001800';ctx.fillRect(sx+32,row,sw-46,11);
+        ctx.fillStyle=hpPct>0.5?'#22ee22':hpPct>0.25?'#eeaa00':'#ee2200';
+        ctx.fillRect(sx+32,row,(sw-46)*hpPct,11);
+        ctx.strokeStyle='#006600';ctx.lineWidth=0.5;ctx.strokeRect(sx+32,row,sw-46,11);
+        ctx.fillStyle='#00ff88';ctx.font='bold 7px Courier New';ctx.textAlign='right';
+        ctx.fillText(`${player.hp}/${player.maxHp}`,sx+sw-6,row+1);row+=lh;
+        const wpn=WEAPONS[currentWeaponIdx];
+        ctx.font='9px Courier New';ctx.textAlign='left';
+        ctx.fillStyle='#448844';ctx.fillText('WPN',sx+6,row);
+        ctx.fillStyle='#00ff88';ctx.fillText(wpn.label,sx+36,row);row+=lh;
+        ctx.fillStyle='#448844';ctx.fillText('DMG',sx+6,row);
+        ctx.fillStyle='#00ff88';ctx.fillText(`${wpn.dmg}${wpn.pellets>1?' x'+wpn.pellets:''}`,sx+36,row);
+        ctx.fillStyle='#448844';ctx.fillText('SPD',sx+sw/2,row);
+        ctx.fillStyle='#00ff88';ctx.fillText(`${wpn.spd}`,sx+sw/2+30,row);row+=lh;
+        const onScreen=enemies.filter(e=>!e.dead&&!e.squished&&e.x>0&&e.x<W).length;
+        ctx.fillStyle='#448844';ctx.fillText('ENMY',sx+6,row);
+        ctx.fillStyle=onScreen>0?'#ff5533':'#00ff88';ctx.fillText(`${onScreen} DETECTED`,sx+36,row);row+=lh;
+        ctx.fillStyle='#448844';ctx.fillText('CAPS',sx+6,row);
+        ctx.fillStyle='#ffcc00';ctx.fillText(`${caps}`,sx+36,row);
+        ctx.fillStyle='#448844';ctx.fillText('SCORE',sx+sw/2,row);
+        ctx.fillStyle='#00ff88';ctx.fillText(`${score}`,sx+sw/2+40,row);row+=lh;
+        if(ownedClothing.size>0){
+            ctx.fillStyle='#448844';ctx.fillText('GEAR',sx+6,row);
+            ctx.fillStyle='#88cc88';ctx.font='8px Courier New';
+            ctx.fillText(CLOTHING_ITEMS.filter(c=>ownedClothing.has(c.id)).map(c=>c.label).join(' + '),sx+36,row+1);
+        }
+        ctx.fillStyle='#224422';ctx.font='7px Courier New';ctx.textAlign='center';ctx.textBaseline='bottom';
+        ctx.fillText('[◄ ►] TABS   [▲ ▼] SELECT   [Z/ENTER] BUY   [P/ESC] CLOSE',sx+sw/2,sy+sh-20);
+    } else {
+        // ── WEAP / CLTH / ITEM list ───────────────────────────────────────
+        const list=getPickleList();
+        pickle3000Scroll=Math.max(0,Math.min(pickle3000Scroll,Math.max(0,list.length-PICKLE_VISIBLE)));
+        for(let i=0;i<Math.min(PICKLE_VISIBLE,list.length-pickle3000Scroll);i++){
+            const li=i+pickle3000Scroll,entry=list[li];
+            const ry=contentY+i*rowH,isSel=li===pickle3000Sel;
+            ctx.fillStyle=isSel?'rgba(0,130,0,0.4)':'rgba(0,25,0,0.3)';ctx.fillRect(sx+3,ry,sw-6,rowH-3);
+            if(isSel){ctx.strokeStyle='#00ff66';ctx.lineWidth=0.7;ctx.strokeRect(sx+3,ry,sw-6,rowH-3);}
+            let badge,badgeCol;
+            if(entry.equipped){badge='EQUIPPED';badgeCol='#00ff88';}
+            else if(entry.owned){badge='OWNED';badgeCol='#448844';}
+            else{badge=`◈ ${entry.cost}`;badgeCol=caps>=entry.cost?'#ffcc00':'#882222';}
+            ctx.textBaseline='top';
+            ctx.fillStyle=entry.owned||entry.equipped?'#88cc88':'#00ff88';
+            ctx.font='bold 9px Courier New';ctx.textAlign='left';ctx.fillText(entry.label,sx+8,ry+4);
+            ctx.fillStyle='#446644';ctx.font='8px Courier New';ctx.fillText(entry.desc,sx+8,ry+17);
+            ctx.fillStyle=badgeCol;ctx.font='bold 9px Courier New';ctx.textAlign='right';ctx.fillText(badge,sx+sw-8,ry+4);
+            ctx.strokeStyle='#002200';ctx.lineWidth=0.4;
+            ctx.beginPath();ctx.moveTo(sx+4,ry+rowH-3);ctx.lineTo(sx+sw-4,ry+rowH-3);ctx.stroke();
+        }
+        if(pickle3000Scroll>0){
+            ctx.fillStyle='#00ff44';ctx.font='9px Courier New';ctx.textAlign='center';ctx.textBaseline='top';
+            ctx.fillText('▲ MORE',sx+sw/2,contentY-1);
+        }
+        if(pickle3000Scroll+PICKLE_VISIBLE<list.length){
+            ctx.fillStyle='#00ff44';ctx.font='9px Courier New';ctx.textAlign='center';ctx.textBaseline='bottom';
+            ctx.fillText('▼ MORE',sx+sw/2,contentY+contentH);
+        }
+    }
 
-    // HP row
-    ctx.fillStyle='#448844';ctx.fillText('HP',sx+6,row);
-    ctx.fillStyle='#001800';ctx.fillRect(sx+24,row+1,sw-34,9);
-    ctx.fillStyle=hpPct>0.5?'#22ee22':hpPct>0.25?'#eeaa00':'#ee2200';
-    ctx.fillRect(sx+24,row+1,(sw-34)*hpPct,9);
-    ctx.strokeStyle='#006600';ctx.lineWidth=0.5;ctx.strokeRect(sx+24,row+1,sw-34,9);
-    ctx.fillStyle='#00ff88';ctx.font='bold 7px Courier New';ctx.textAlign='right';
-    ctx.fillText(`${player.hp}/${player.maxHp}`,sx+sw-4,row+1);
-    row+=lh;
-
-    ctx.font='8px Courier New';ctx.textAlign='left';
-
-    // Weapon
-    ctx.fillStyle='#448844';ctx.fillText('WPN',sx+6,row);
-    ctx.fillStyle='#00ff88';ctx.fillText(WEAPONS[currentWeaponIdx].label,sx+30,row);
-    row+=lh;
-
-    // DMG/SPD
-    const wpn=WEAPONS[currentWeaponIdx];
-    ctx.fillStyle='#448844';ctx.fillText('DMG',sx+6,row);
-    ctx.fillStyle='#00ff88';ctx.fillText(`${wpn.dmg}${wpn.pellets>1?' x'+wpn.pellets:''}`,sx+30,row);
-    ctx.fillStyle='#448844';ctx.fillText('SPD',sx+sw/2,row);
-    ctx.fillStyle='#00ff88';ctx.fillText(`${wpn.spd}`,sx+sw/2+24,row);
-    row+=lh;
-
-    // Enemies
-    const onScreen=enemies.filter(e=>!e.dead&&!e.squished&&e.x>0&&e.x<W).length;
-    ctx.fillStyle='#448844';ctx.fillText('ENMY',sx+6,row);
-    ctx.fillStyle=onScreen>0?'#ff5533':'#00ff88';
-    ctx.fillText(`${onScreen} DETECTED`,sx+30,row);
-    row+=lh;
-
-    // Caps
-    ctx.fillStyle='#448844';ctx.fillText('CAPS',sx+6,row);
-    ctx.fillStyle='#ffcc00';ctx.fillText(`${caps}`,sx+30,row);
-    row+=lh;
-
-    // Score
-    ctx.fillStyle='#448844';ctx.fillText('SCORE',sx+6,row);
-    ctx.fillStyle='#00ff88';ctx.fillText(`${score}`,sx+34,row);
-
-    // bottom status blink
-    if(Math.floor(frame/28)%2===0){
-        ctx.fillStyle='rgba(0,255,80,0.12)';ctx.fillRect(sx,sy+sh-14,sw,13);
-        ctx.fillStyle='#00aa44';ctx.font='7px Courier New';ctx.textAlign='center';
-        ctx.fillText('PICKLE INDUSTRIES  UNIFIED WRIST DEVICE',sx+sw/2,sy+sh-6);
+    // Message / status bar
+    ctx.fillStyle='rgba(0,40,0,0.8)';ctx.fillRect(sx,sy+sh-18,sw,18);
+    if(pickle3000MsgTimer>0){
+        const isErr=pickle3000Msg.includes('INSUFFICIENT')||pickle3000Msg.includes('ALREADY');
+        ctx.fillStyle=isErr?'#ff6633':'#00ff88';
+        ctx.font='bold 8px Courier New';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(pickle3000Msg,sx+sw/2,sy+sh-9);
+    } else if(Math.floor(frame/30)%2===0){
+        ctx.fillStyle='#224422';ctx.font='7px Courier New';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText('PICKLE INDUSTRIES  UNIFIED WRIST DEVICE',sx+sw/2,sy+sh-9);
     }
 
     ctx.restore(); // end clip
 
-    // --- Wrist strap ---
+    // Wrist strap
     ctx.fillStyle='#18150c';
-    ctx.fillRect(px+28,py+ph,pw-56,9);
-    ctx.fillRect(px+46,py+ph+9,pw-92,5);
-    ctx.strokeStyle='#28220f';ctx.lineWidth=1;
-    ctx.strokeRect(px+28,py+ph,pw-56,9);
+    ctx.fillRect(px+28,py+ph,pw-56,9);ctx.fillRect(px+46,py+ph+9,pw-92,5);
+    ctx.strokeStyle='#28220f';ctx.lineWidth=1;ctx.strokeRect(px+28,py+ph,pw-56,9);
     for(let hi=0;hi<6;hi++){
-        ctx.fillStyle='#06050300';ctx.beginPath();
-        ctx.arc(px+54+hi*22,py+ph+4,2,0,Math.PI*2);ctx.fill();
         ctx.strokeStyle='#000';ctx.lineWidth=0.8;
-        ctx.beginPath();ctx.arc(px+54+hi*22,py+ph+4,2,0,Math.PI*2);ctx.stroke();
+        ctx.beginPath();ctx.arc(px+54+hi*26,py+ph+4,2,0,Math.PI*2);ctx.stroke();
     }
-
     ctx.restore();
 }
 
@@ -1436,7 +1544,7 @@ function drawHUD(ctx,player,score,highScore,diffTick,vatsRef,silTicks,frame,caps
         ctx.textAlign='left';
         ctx.fillText('← → MOVE',10,H-17);ctx.fillText('↑ JUMP',95,H-17);
         ctx.fillText('↓ CROUCH',155,H-17);ctx.fillText('Z SHOOT',245,H-17);
-        ctx.fillText('[V] VATS',320,H-17);
+        ctx.fillText('[V] VATS',320,H-17);ctx.fillText('[P] MENU',395,H-17);
     }
     const phases=['⚡ EASY','⚡ THREAT','⚠ DANGER','☢ LETHAL'];
     const pi=Math.min(3,Math.floor(diffTick/1800));
@@ -1555,6 +1663,38 @@ function update(){
     }
 
     // ── Playing ──────────────────────────────────────────────────────
+    // Pickle 3000 open/close
+    if(pressed['KeyP']&&!pickle3000Open){
+        pickle3000Open=true;pickle3000Tab=0;pickle3000Sel=0;pickle3000Scroll=0;
+        sfxPickle3000();
+        for(const k in pressed)delete pressed[k];
+    }
+    // While Pickle 3000 menu is open: handle navigation and freeze gameplay
+    if(pickle3000Open){
+        if(pickle3000MsgTimer>0)pickle3000MsgTimer--;
+        const list=pickle3000Tab>0?getPickleList():[];
+        if(pressed['ArrowLeft']||pressed['KeyA']){
+            pickle3000Tab=(pickle3000Tab-1+4)%4;pickle3000Sel=0;pickle3000Scroll=0;
+        }
+        if(pressed['ArrowRight']||pressed['KeyD']){
+            pickle3000Tab=(pickle3000Tab+1)%4;pickle3000Sel=0;pickle3000Scroll=0;
+        }
+        if(pickle3000Tab>0&&list.length>0){
+            if(pressed['ArrowUp']||pressed['KeyW']){
+                pickle3000Sel=Math.max(0,pickle3000Sel-1);
+                if(pickle3000Sel<pickle3000Scroll)pickle3000Scroll=pickle3000Sel;
+            }
+            if(pressed['ArrowDown']||pressed['KeyS']){
+                pickle3000Sel=Math.min(list.length-1,pickle3000Sel+1);
+                if(pickle3000Sel>=pickle3000Scroll+PICKLE_VISIBLE)pickle3000Scroll=pickle3000Sel-PICKLE_VISIBLE+1;
+            }
+            if(pressed['Enter']||pressed['Space']||pressed['KeyZ'])pickle3000Buy();
+        }
+        if(pressed['Escape']||pressed['KeyP']){pickle3000Open=false;sfxPickle3000();}
+        for(const k in pressed)delete pressed[k];
+        return; // freeze all gameplay while menu is open
+    }
+
     const frozen=vats.active;
 
     // Vault approach: lerp world speed down to 0.22 when vault is on screen
@@ -1746,7 +1886,7 @@ function update(){
 
     if(player.dead){
         if(!player.deathSoundPlayed){sfxDie();player.deathSoundPlayed=true;}
-        highScore=Math.max(highScore,score);state='dead';
+        highScore=Math.max(highScore,score);state='dead';pickle3000Open=false;
     }
 
     tickShake();
@@ -1815,7 +1955,7 @@ function draw(){
         if(vats.active)drawVATSOverlay(ctx,enemies,vats,gameFrame);
         // HUD
         drawHUD(ctx,player,score,highScore,diffTick,vats,silencerTicks,gameFrame,caps);
-        if(pickle3000)drawPickle3000(ctx,player,enemies,score,caps,gameFrame);
+        if(pickle3000Open)drawPickle3000(ctx,player,enemies,score,caps,gameFrame);
         if(state==='dead')drawDead(ctx,score,highScore,score>=highScore);
         const vi = vaultDoors.some(v=>v.interactive);
         drawTouchControls(ctx, vi);
